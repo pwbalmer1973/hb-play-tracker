@@ -4,21 +4,29 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="HB Tracker" />
-<meta name="theme-color" content="#1d1d1f" />
+<meta name="theme-color" content="#1a3a8c" />
 <link rel="manifest" href="manifest.json" />
 <title>HB Play Tracker</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; background: #f5f5f7; color: #1d1d1f; min-height: 100vh; }
-  .app { max-width: 900px; margin: 0 auto; padding: 16px; }
-  .app-title { font-size: 20px; font-weight: 700; color: #1d1d1f; margin-bottom: 14px; letter-spacing: -0.3px; }
+  .app { max-width: 900px; margin: 0 auto; padding: 0 0 24px 0; }
+
+  /* Header */
+  .app-header { background: #1a3a8c; padding: 16px 18px 14px; display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .app-logo { flex: 0 0 auto; }
+  .app-title { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.3px; line-height: 1.1; }
+  .app-subtitle { font-size: 11px; color: rgba(255,255,255,0.65); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px; }
+
+  .tabs-wrap { padding: 0 16px; }
   .tabs { display: flex; border-bottom: 1px solid #d2d2d7; margin-bottom: 16px; }
   .tab { padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: #6e6e73; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .tab.active { color: #1d1d1f; border-bottom-color: #1d1d1f; }
-  .tab-content { display: none; }
+  .tab.active { color: #1a3a8c; border-bottom-color: #1a3a8c; }
+  .tab-content { display: none; padding: 0 16px; }
   .tab-content.active { display: block; }
+
   .card { background: #fff; border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .card-title { font-size: 11px; font-weight: 600; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
   .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
@@ -26,41 +34,47 @@
   .stat-label { font-size: 10px; font-weight: 600; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
   .stat-value { font-size: 22px; font-weight: 600; color: #1d1d1f; }
   .stat-value-sm { font-size: 14px; font-weight: 600; color: #1d1d1f; line-height: 1.4; }
+
   .score-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: end; margin-bottom: 14px; }
   .score-card { background: #fff; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; }
   .score-label { font-size: 10px; font-weight: 600; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .score-hb { font-size: 10px; font-weight: 700; color: #1a3a8c; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
   .score-input { font-size: 28px; font-weight: 700; color: #1d1d1f; background: transparent; border: none; border-bottom: 2px solid #d2d2d7; width: 60px; text-align: center; padding: 0; outline: none; }
-  .score-input:focus { border-bottom-color: #1d1d1f; }
+  .score-input:focus { border-bottom-color: #1a3a8c; }
   .score-sep { font-size: 22px; color: #6e6e73; padding-bottom: 10px; }
-  .game-banner { background: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .game-banner { background: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #1a3a8c; }
   .game-banner-label { font-size: 10px; font-weight: 600; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.06em; }
   .game-banner-name { font-size: 15px; font-weight: 600; color: #1d1d1f; margin-top: 2px; }
+
   .quarter-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
   .q-tab { padding: 5px 14px; border-radius: 8px; border: 1px solid #d2d2d7; font-size: 12px; font-weight: 500; cursor: pointer; background: transparent; color: #6e6e73; }
-  .q-tab.active { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
+  .q-tab.active { background: #1a3a8c; color: #fff; border-color: #1a3a8c; }
+
   .row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
   .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
   .field-group { display: flex; flex-direction: column; gap: 4px; }
   .field-label { font-size: 10px; font-weight: 600; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.06em; }
   select, input[type="text"], input[type="number"], input[type="date"], textarea { width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid #d2d2d7; background: #f5f5f7; color: #1d1d1f; font-size: 13px; font-family: inherit; outline: none; -webkit-appearance: none; appearance: none; }
-  select:focus, input:focus, textarea:focus { border-color: #1d1d1f; background: #fff; }
+  select:focus, input:focus, textarea:focus { border-color: #1a3a8c; background: #fff; }
   textarea { resize: vertical; min-height: 64px; }
   .divider { border: none; border-top: 1px solid #f0f0f5; margin: 12px 0; }
   .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
   button { cursor: pointer; font-family: inherit; }
-  .btn-primary { background: #1d1d1f; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; }
+  .btn-primary { background: #1a3a8c; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; }
   .btn-primary:active { opacity: 0.8; }
   .btn-secondary { background: #f5f5f7; color: #1d1d1f; border: 1px solid #d2d2d7; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 500; }
   .btn-secondary:hover { background: #e8e8ed; }
   .btn-danger { background: transparent; border: none; color: #ff3b30; font-size: 12px; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
   .btn-sm { padding: 5px 10px; font-size: 12px; }
+
   .log-wrap { overflow-x: auto; }
   .log-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; min-width: 700px; }
   .log-table th { text-align: left; font-size: 10px; font-weight: 600; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 5px; border-bottom: 1px solid #f0f0f5; white-space: nowrap; }
   .log-table td { padding: 6px 5px; border-bottom: 1px solid #f5f5f7; color: #1d1d1f; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .log-table tr:last-child td { border-bottom: none; }
-  .log-table tr:hover td { background: #f9f9fb; }
+  .log-table tr:hover td { background: #f0f4ff; }
   .yards-pos { color: #34c759; font-weight: 600; }
   .yards-neg { color: #ff3b30; font-weight: 600; }
   .yards-zero { color: #6e6e73; }
@@ -68,19 +82,22 @@
   .type-pill { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
   .type-run { background: #d1f5e0; color: #1a7a3c; }
   .type-pass { background: #ddeeff; color: #0055cc; }
+
   .game-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1px solid #e5e5ea; border-radius: 10px; margin-bottom: 8px; }
-  .game-item.active-game { border-color: #1d1d1f; background: #f9f9fb; }
+  .game-item.active-game { border-color: #1a3a8c; background: #f0f4ff; }
   .game-name { font-weight: 600; font-size: 13px; }
   .game-meta { font-size: 11px; color: #6e6e73; margin-top: 2px; }
   .game-actions { display: flex; gap: 6px; align-items: center; }
-  .backup-section { background: #f0f7ff; border: 1px solid #c0d8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
-  .backup-title { font-size: 11px; font-weight: 600; color: #0055cc; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
-  .backup-note { font-size: 12px; color: #3a5a80; margin-top: 8px; line-height: 1.5; }
+
+  .backup-section { background: #f0f4ff; border: 1px solid #b0c4f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+  .backup-title { font-size: 11px; font-weight: 600; color: #1a3a8c; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .backup-note { font-size: 12px; color: #3a4a7a; margin-top: 8px; line-height: 1.5; }
+
   .offline-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: #856404; display: none; }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1d1d1f; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a3a8c; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
   .toast.show { opacity: 1; }
   .auto-updated { animation: flashField 0.5s ease; }
-  @keyframes flashField { 0%,100%{background:transparent} 50%{background:#e8f4ff} }
+  @keyframes flashField { 0%,100%{background:transparent} 50%{background:#ddeeff} }
   @media (max-width: 600px) {
     .stats-grid { grid-template-columns: repeat(3, 1fr); }
     .row-4 { grid-template-columns: repeat(2, 1fr); }
@@ -90,14 +107,48 @@
 </head>
 <body>
 <div class="app">
-  <div class="app-title">HB Play Tracker</div>
-  <div class="offline-banner" id="offline-banner">&#9888; You are offline &mdash; the app is running from cache. All data is saved locally.</div>
 
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('log')">Play Charting</button>
-    <button class="tab" onclick="showTab('games')">Games</button>
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="app-logo">
+      <svg width="52" height="44" viewBox="0 0 520 440" xmlns="http://www.w3.org/2000/svg" fill="white">
+        <!-- HB text -->
+        <text x="260" y="120" font-family="Georgia, serif" font-size="160" font-weight="700" text-anchor="middle" fill="white">HB</text>
+        <!-- Left sword -->
+        <g transform="translate(260,200)">
+          <!-- blade left -->
+          <path d="M-200,180 Q-180,140 -10,10" stroke="white" stroke-width="14" fill="none" stroke-linecap="round"/>
+          <!-- guard left -->
+          <ellipse cx="-200" cy="184" rx="18" ry="8" fill="white" transform="rotate(-35,-200,184)"/>
+          <!-- pommel left -->
+          <circle cx="-218" cy="196" r="10" fill="white"/>
+        </g>
+        <!-- Right sword -->
+        <g transform="translate(260,200)">
+          <!-- blade right -->
+          <path d="M200,180 Q180,140 10,10" stroke="white" stroke-width="14" fill="none" stroke-linecap="round"/>
+          <!-- guard right -->
+          <ellipse cx="200" cy="184" rx="18" ry="8" fill="white" transform="rotate(35,200,184)"/>
+          <!-- pommel right -->
+          <circle cx="218" cy="196" r="10" fill="white"/>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <div class="app-title">HB Play Tracker</div>
+      <div class="app-subtitle">Hollis-Brookline Football</div>
+    </div>
   </div>
 
+  <div class="tabs-wrap">
+    <div class="offline-banner" id="offline-banner">&#9888; Offline &mdash; running from cache. Data is saved locally.</div>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('log')">Play Charting</button>
+      <button class="tab" onclick="showTab('games')">Games</button>
+    </div>
+  </div>
+
+  <!-- PLAY CHARTING TAB -->
   <div id="tab-log" class="tab-content active">
     <div class="game-banner">
       <div>
@@ -106,11 +157,13 @@
       </div>
       <button class="btn-secondary btn-sm" onclick="showTab('games')">Switch game</button>
     </div>
+
     <div class="score-row">
-      <div class="score-card"><div class="score-label">HB</div><input class="score-input" type="number" id="score-us" value="0" min="0" onchange="saveScore()" /></div>
+      <div class="score-card"><div class="score-hb">HB</div><input class="score-input" type="number" id="score-us" value="0" min="0" onchange="saveScore()" /></div>
       <div style="display:flex;align-items:center"><span class="score-sep">&#8211;</span></div>
       <div class="score-card"><div class="score-label" id="opp-score-label">OPP</div><input class="score-input" type="number" id="score-them" value="0" min="0" onchange="saveScore()" /></div>
     </div>
+
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Play #</div><div class="stat-value" id="stat-playnum">1</div></div>
       <div class="stat-card"><div class="stat-label">Current drive</div><div class="stat-value-sm" id="stat-drive">&#8212;</div></div>
@@ -118,6 +171,7 @@
       <div class="stat-card"><div class="stat-label">Avg gain</div><div class="stat-value" id="stat-avg">&#8212;</div></div>
       <div class="stat-card"><div class="stat-label">Quarter</div><div class="stat-value" id="stat-quarter">Q1</div></div>
     </div>
+
     <div class="card">
       <div class="card-title">Log a play</div>
       <div class="quarter-tabs">
@@ -131,7 +185,7 @@
         <div class="field-group"><label class="field-label">Down</label><select id="down"><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select></div>
         <div class="field-group"><label class="field-label">Distance</label><input type="number" id="distance" value="10" min="1" max="99" /></div>
         <div class="field-group"><label class="field-label">Hash</label><select id="hash"><option>Left hash</option><option>Middle</option><option>Right hash</option></select></div>
-        <div class="field-group"><label class="field-label">Yard line</label><div style="display:flex;gap:6px;align-items:center"><select id="yardside" style="width:auto;flex:0 0 auto"><option value="ours">Ours</option><option value="theirs">Theirs</option></select><input type="number" id="yardline" placeholder="25" min="1" max="50" style="flex:1" /></div></div>
+        <div class="field-group"><label class="field-label">Yard line</label><div style="display:flex;gap:6px;align-items:center"><select id="yardside" style="width:auto;flex:0 0 auto" onchange="autoTDYards()"><option value="ours">Ours</option><option value="theirs">Theirs</option></select><input type="number" id="yardline" placeholder="25" min="1" max="50" style="flex:1" oninput="autoTDYards()" /></div></div>
       </div>
       <hr class="divider">
       <div class="row-4">
@@ -143,7 +197,7 @@
       <div class="row-4">
         <div class="field-group"><label class="field-label">Play type</label><select id="playtype" onchange="autoResult()"><option value="">&#8212;</option><option value="Run">Run</option><option value="Pass">Pass</option></select></div>
         <div class="field-group"><label class="field-label">Yards gained / lost</label><input type="number" id="yards" placeholder="e.g. 5 or -2" oninput="autoResult()" /></div>
-        <div class="field-group"><label class="field-label">Result</label><select id="result"><option value="">&#8212;</option><option>Completion</option><option>Fumble</option><option>Fumble &#8212; recovered</option><option>Incomplete</option><option>Interception</option><option>1st down</option><option>Out of bounds</option><option>Penalty &#8212; defense</option><option>Penalty &#8212; offense</option><option>Sack</option><option>Safety</option><option>Touchdown</option><option>Turnover on downs</option></select></div>
+        <div class="field-group"><label class="field-label">Result</label><select id="result" onchange="autoTDYards()"><option value="">&#8212;</option><option>Completion</option><option>Fumble</option><option>Fumble &#8212; recovered</option><option>Incomplete</option><option>Interception</option><option>1st down</option><option>Out of bounds</option><option>Penalty &#8212; defense</option><option>Penalty &#8212; offense</option><option>Sack</option><option>Safety</option><option>Touchdown</option><option>Turnover on downs</option></select></div>
         <div class="field-group"><label class="field-label">QB</label><input type="text" id="qb" placeholder="Name or #" /></div>
       </div>
       <div class="row-4">
@@ -155,12 +209,14 @@
       <div class="field-group" style="margin-bottom:10px"><label class="field-label">Notes</label><textarea id="notes" placeholder="Free form notes about the play..."></textarea></div>
       <div class="btn-row"><button class="btn-secondary" onclick="exportCSV()">&#8595; Export CSV</button></div>
     </div>
+
     <div class="card">
       <div class="card-title">Play log</div>
       <div class="log-wrap"><div id="log-container"><div class="empty-state">No plays logged yet.</div></div></div>
     </div>
   </div>
 
+  <!-- GAMES TAB -->
   <div id="tab-games" class="tab-content">
     <div class="backup-section">
       <div class="backup-title">&#128190; Backup &amp; Restore</div>
@@ -198,32 +254,20 @@ var NO_ADVANCE=['Incomplete'];
 var GAMES_KEY='hb_games',ACTIVE_KEY='hb_active_game';
 var games={},activeGameId=null,currentQ=1,lastQB='';
 
-// Service worker registration
-if('serviceWorker' in navigator){
-  window.addEventListener('load',function(){
-    navigator.serviceWorker.register('/hb-play-tracker/sw.js').then(function(reg){
-      console.log('SW registered');
-    }).catch(function(err){
-      console.log('SW registration failed:',err);
-    });
-  });
-}
-
-// Offline detection
-window.addEventListener('online', function(){ document.getElementById('offline-banner').style.display='none'; showToast('Back online'); });
-window.addEventListener('offline', function(){ document.getElementById('offline-banner').style.display='block'; showToast('Offline \u2014 using cached version'); });
-if(!navigator.onLine){ document.getElementById('offline-banner').style.display='block'; }
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/hb-play-tracker/sw.js').then(function(){console.log('SW ok');}).catch(function(e){console.log('SW err',e);});});}
+window.addEventListener('online',function(){document.getElementById('offline-banner').style.display='none';showToast('Back online');});
+window.addEventListener('offline',function(){document.getElementById('offline-banner').style.display='block';showToast('Offline \u2014 using cached version');});
+if(!navigator.onLine){document.getElementById('offline-banner').style.display='block';}
 
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
-
 function saveAll(){try{localStorage.setItem(GAMES_KEY,JSON.stringify(games));if(activeGameId)localStorage.setItem(ACTIVE_KEY,activeGameId);}catch(e){}}
 function loadAll(){try{var g=localStorage.getItem(GAMES_KEY);if(g)games=JSON.parse(g);var a=localStorage.getItem(ACTIVE_KEY);if(a&&games[a])activeGameId=a;}catch(e){games={};}}
 function activePlays(){return activeGameId&&games[activeGameId]?games[activeGameId].plays:[];}
 
-function exportBackup(){var data={version:1,exported:new Date().toISOString(),games:games};var json=JSON.stringify(data,null,2);var a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(json);var d=new Date().toISOString().split('T')[0];a.download='HB_Play_Tracker_Backup_'+d+'.json';a.click();showToast('Backup exported');}
+function exportBackup(){var data={version:1,exported:new Date().toISOString(),games:games};var a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));a.download='HB_Play_Tracker_Backup_'+new Date().toISOString().split('T')[0]+'.json';a.click();showToast('Backup exported');}
+function importBackup(event){var file=event.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(e){try{var data=JSON.parse(e.target.result);if(!data.games){alert('Invalid backup file.');return;}var count=Object.keys(data.games).length;if(!confirm((Object.keys(games).length>0?'Merge with existing data? ':'Load ')+''+count+' game(s) from backup?'))return;Object.keys(data.games).forEach(function(id){games[id]=data.games[id];});saveAll();updateCurrentGameBanner();loadScore();updateAllStats();renderLog();renderGameList();showToast('Restored \u2014 '+count+' game(s) loaded');}catch(err){alert('Could not read backup file.');}};reader.readAsText(file);event.target.value='';}
 
-function importBackup(event){var file=event.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(e){try{var data=JSON.parse(e.target.result);if(!data.games){alert('Invalid backup file.');return;}var count=Object.keys(data.games).length;var existing=Object.keys(games).length;var msg=existing>0?'This will merge with your '+existing+' existing game(s). '+count+' game(s) in backup will be added or updated. Continue?':'Load '+count+' game(s) from backup?';if(!confirm(msg))return;Object.keys(data.games).forEach(function(id){games[id]=data.games[id];});saveAll();updateCurrentGameBanner();loadScore();updateAllStats();renderLog();renderGameList();showToast('Backup restored \u2014 '+count+' game(s) loaded');}catch(err){alert('Could not read backup file.');}};reader.readAsText(file);event.target.value='';}
-
+function autoTDYards(){var result=document.getElementById('result').value;if(result!=='Touchdown')return;var side=document.getElementById('yardside').value;var yl=parseInt(document.getElementById('yardline').value,10);if(!yl)return;document.getElementById('yards').value=side==='theirs'?yl:(100-yl);}
 function autoFormationType(){var f=document.getElementById('formation').value;var pt=FORMATION_TYPE_MAP[f];if(pt){setPlayType(pt);autoResult();}}
 function autoPlayType(){var play=document.getElementById('playtag').value;var pt=PLAY_TYPE_MAP[play];if(pt)setPlayType(pt);else document.getElementById('playtype').selectedIndex=0;autoResult();}
 function setPlayType(pt){var sel=document.getElementById('playtype');for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===pt){sel.selectedIndex=i;break;}}}
@@ -235,12 +279,11 @@ function loadScore(){if(activeGameId&&games[activeGameId]){document.getElementBy
 function updateScoreAfterResult(result){if(!activeGameId)return;var g=games[activeGameId];if(result==='Touchdown'){g.scoreUs=(g.scoreUs||0)+6;document.getElementById('score-us').value=g.scoreUs;saveAll();}else if(result==='Safety'){g.scoreThem=(g.scoreThem||0)+2;document.getElementById('score-them').value=g.scoreThem;saveAll();}}
 
 function showTab(t){document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});document.getElementById('tab-'+t).classList.add('active');document.querySelectorAll('.tab')[t==='log'?0:1].classList.add('active');if(t==='games')renderGameList();}
-
 function createGame(){var opp=document.getElementById('new-opponent').value.trim();var dt=document.getElementById('new-date').value;if(!opp){document.getElementById('new-opponent').focus();return;}var id='game_'+Date.now();games[id]={id:id,opponent:opp,date:dt,plays:[],scoreUs:0,scoreThem:0};saveAll();setActiveGame(id);document.getElementById('new-opponent').value='';showTab('log');}
 function setActiveGame(id){activeGameId=id;saveAll();updateCurrentGameBanner();loadScore();updateAllStats();renderLog();lastQB='';document.getElementById('qb').value='';}
 function deleteGame(id){if(!confirm('Delete this game and all its plays?'))return;delete games[id];if(activeGameId===id){activeGameId=null;localStorage.removeItem(ACTIVE_KEY);updateCurrentGameBanner();loadScore();updateAllStats();renderLog();}saveAll();renderGameList();}
 function updateCurrentGameBanner(){var el=document.getElementById('current-game-label');if(activeGameId&&games[activeGameId]){var g=games[activeGameId];var dt=g.date?new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';el.textContent=g.opponent+(dt?' \u2014 '+dt:'');}else{el.textContent='No game selected';}}
-function renderGameList(){var el=document.getElementById('game-list');var ids=Object.keys(games).sort(function(a,b){return b.localeCompare(a);});if(!ids.length){el.innerHTML='<div class="empty-state">No games yet \u2014 create one above.</div>';return;}el.innerHTML=ids.map(function(id){var g=games[id];var isActive=id===activeGameId;var dt=g.date?new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'No date';return'<div class="game-item '+(isActive?'active-game':'')+'"><div onclick="setActiveGame(\''+id+'\');showTab(\'log\')" style="flex:1;cursor:pointer"><div class="game-name">'+g.opponent+(isActive?' <span style="font-size:10px;font-weight:500;color:#6e6e73">(active)</span>':'')+'</div><div class="game-meta">'+dt+' &middot; '+g.plays.length+' plays &middot; '+(g.scoreUs||0)+'&ndash;'+(g.scoreThem||0)+'</div></div><div class="game-actions"><button class="btn-secondary btn-sm" onclick="exportGameCSV(\''+id+'\')">CSV</button><button class="btn-danger" onclick="deleteGame(\''+id+'\')">&times;</button></div></div>';}).join('');}
+function renderGameList(){var el=document.getElementById('game-list');var ids=Object.keys(games).sort(function(a,b){return b.localeCompare(a);});if(!ids.length){el.innerHTML='<div class="empty-state">No games yet \u2014 create one above.</div>';return;}el.innerHTML=ids.map(function(id){var g=games[id];var isActive=id===activeGameId;var dt=g.date?new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'No date';return'<div class="game-item '+(isActive?'active-game':'')+'"><div onclick="setActiveGame(\''+id+'\');showTab(\'log\')" style="flex:1;cursor:pointer"><div class="game-name">'+g.opponent+(isActive?' <span style="font-size:10px;color:#6e6e73">(active)</span>':'')+'</div><div class="game-meta">'+dt+' &middot; '+g.plays.length+' plays &middot; '+(g.scoreUs||0)+'&ndash;'+(g.scoreThem||0)+'</div></div><div class="game-actions"><button class="btn-secondary btn-sm" onclick="exportGameCSV(\''+id+'\')">CSV</button><button class="btn-danger" onclick="deleteGame(\''+id+'\')">&times;</button></div></div>';}).join('');}
 
 function setQ(q,el){currentQ=q;document.querySelectorAll('.q-tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');document.getElementById('stat-quarter').textContent='Q'+q;}
 function advanceYardLine(side,yl,yards){var abs=side==='ours'?yl:(100-yl);abs=Math.min(100,Math.max(1,abs+yards));return abs<=50?{side:'ours',yl:abs}:{side:'theirs',yl:100-abs};}
@@ -253,11 +296,8 @@ function flash(id){var el=document.getElementById(id);if(!el)return;el.classList
 function logPlay(){if(!activeGameId){alert('Please create or select a game first.');showTab('games');return;}var yardsRaw=document.getElementById('yards').value;if(!yardsRaw){document.getElementById('yards').focus();return;}var plays=activePlays();var downVal=document.getElementById('down').value;var distVal=parseInt(document.getElementById('distance').value,10)||10;var downIndex=DOWNS.indexOf(downVal);var side=document.getElementById('yardside').value;var ylVal=parseInt(document.getElementById('yardline').value,10)||25;var yards=parseInt(yardsRaw,10);var result=document.getElementById('result').value||'\u2014';var qbVal=document.getElementById('qb').value.trim()||lastQB;var parts=[document.getElementById('formation').value,document.getElementById('motion').value,document.getElementById('hole').value,document.getElementById('playtag').value].filter(Boolean);var play={id:Date.now(),num:plays.length+1,quarter:currentQ,down:downVal,dist:distVal,hash:document.getElementById('hash').value,yardline:(side==='ours'?'Our ':'Their ')+ylVal,call:parts.join(' '),playtype:document.getElementById('playtype').value||'\u2014',yards:yards,result:result,qb:qbVal,player:document.getElementById('player').value.trim()||'\u2014',defFront:document.getElementById('def-front').value||'\u2014',coverage:document.getElementById('coverage').value||'\u2014',notes:document.getElementById('notes').value.trim()||''};games[activeGameId].plays.push(play);updateScoreAfterResult(result);if(qbVal){lastQB=qbVal;document.getElementById('qb').value=qbVal;}saveAll();updateAllStats();renderLog();updateFormAfterPlay(result,yards,distVal,downIndex,side,ylVal);['yards','player','notes'].forEach(function(id){document.getElementById(id).value='';});['result','formation','hole','motion','playtag','playtype','def-front','coverage'].forEach(function(id){document.getElementById(id).selectedIndex=0;});}
 
 function deletePlay(id){if(!activeGameId)return;games[activeGameId].plays=games[activeGameId].plays.filter(function(p){return p.id!==id;});games[activeGameId].plays.forEach(function(p,i){p.num=i+1;});saveAll();updateAllStats();renderLog();}
-
 function updateAllStats(){var plays=activePlays();var n=plays.length;var total=plays.reduce(function(s,p){return s+p.yards;},0);document.getElementById('stat-playnum').textContent=n+1;document.getElementById('stat-yards').textContent=total;document.getElementById('stat-avg').textContent=n?(total/n).toFixed(1):'\u2014';var d=calcDrive(plays);document.getElementById('stat-drive').textContent=d.drivePlays>0?(d.drivePlays+' pl / '+d.driveYards+' yds'):'\u2014';}
-
-function renderLog(){var el=document.getElementById('log-container');var plays=activePlays();if(!plays.length){el.innerHTML='<div class="empty-state">No plays logged yet.</div>';return;}var rows=[].concat(plays).reverse().map(function(p){var yc=p.yards>0?'yards-pos':p.yards<0?'yards-neg':'yards-zero';var ys=p.yards>0?'+'+p.yards:String(p.yards);var tc=TYPE_CLASS[p.playtype]||'';var noteIcon=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';return'<tr><td style="width:24px;font-weight:600">'+p.num+'</td><td style="width:26px">Q'+p.quarter+'</td><td style="width:58px">'+p.down+' &amp; '+p.dist+'</td><td style="width:44px">'+p.hash.replace(' hash','')+'</td><td style="width:58px">'+p.yardline+'</td><td style="width:100px">'+p.call+noteIcon+'</td><td style="width:46px"><span class="type-pill '+tc+'">'+p.playtype+'</span></td><td style="width:40px">'+(p.qb||'\u2014')+'</td><td style="width:40px">'+p.player+'</td><td class="'+yc+'" style="width:32px">'+ys+'</td><td style="width:70px">'+p.result+'</td><td style="width:36px">'+(p.defFront||'\u2014')+'</td><td style="width:50px">'+(p.coverage||'\u2014')+'</td><td style="width:26px;text-align:right"><button class="btn-danger" onclick="deletePlay('+p.id+')">&times;</button></td></tr>';}).join('');el.innerHTML='<table class="log-table"><thead><tr><th>#</th><th>Qtr</th><th>Down</th><th>Hash</th><th>Yard</th><th>Call</th><th>Type</th><th>QB</th><th>Player</th><th>Yds</th><th>Result</th><th>Front</th><th>Cov</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';}
-
+function renderLog(){var el=document.getElementById('log-container');var plays=activePlays();if(!plays.length){el.innerHTML='<div class="empty-state">No plays logged yet.</div>';return;}var rows=[].concat(plays).reverse().map(function(p){var yc=p.yards>0?'yards-pos':p.yards<0?'yards-neg':'yards-zero';var ys=p.yards>0?'+'+p.yards:String(p.yards);var tc=TYPE_CLASS[p.playtype]||'';var ni=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';return'<tr><td style="width:24px;font-weight:600">'+p.num+'</td><td style="width:26px">Q'+p.quarter+'</td><td style="width:58px">'+p.down+' &amp; '+p.dist+'</td><td style="width:44px">'+p.hash.replace(' hash','')+'</td><td style="width:58px">'+p.yardline+'</td><td style="width:100px">'+p.call+ni+'</td><td style="width:46px"><span class="type-pill '+tc+'">'+p.playtype+'</span></td><td style="width:40px">'+(p.qb||'\u2014')+'</td><td style="width:40px">'+p.player+'</td><td class="'+yc+'" style="width:32px">'+ys+'</td><td style="width:70px">'+p.result+'</td><td style="width:36px">'+(p.defFront||'\u2014')+'</td><td style="width:50px">'+(p.coverage||'\u2014')+'</td><td style="width:26px;text-align:right"><button class="btn-danger" onclick="deletePlay('+p.id+')">&times;</button></td></tr>';}).join('');el.innerHTML='<table class="log-table"><thead><tr><th>#</th><th>Qtr</th><th>Down</th><th>Hash</th><th>Yard</th><th>Call</th><th>Type</th><th>QB</th><th>Player</th><th>Yds</th><th>Result</th><th>Front</th><th>Cov</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';}
 function exportCSV(){if(activeGameId)exportGameCSV(activeGameId);}
 function exportGameCSV(id){var g=games[id];if(!g||!g.plays.length)return;var hdr=['#','Quarter','Down','Distance','Hash','Yard Line','Call','Play Type','QB','Player','Yards','Result','Def Front','Coverage','Notes'];var rows=g.plays.map(function(p){return[p.num,p.quarter,p.down,p.dist,p.hash,p.yardline,p.call,p.playtype,p.qb||'',p.player,p.yards,p.result,p.defFront||'',p.coverage||'',p.notes||''];});var csv=[hdr].concat(rows).map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='HB_'+g.opponent.replace(/\s+/g,'_')+'_'+(g.date||'game')+'.csv';a.click();}
 
