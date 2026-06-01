@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="HB Tracker" />
+<meta name="theme-color" content="#1d1d1f" />
+<link rel="manifest" href="manifest.json" />
 <title>HB Play Tracker</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,7 +47,7 @@
   select:focus, input:focus, textarea:focus { border-color: #1d1d1f; background: #fff; }
   textarea { resize: vertical; min-height: 64px; }
   .divider { border: none; border-top: 1px solid #f0f0f5; margin: 12px 0; }
-  .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
   button { cursor: pointer; font-family: inherit; }
   .btn-primary { background: #1d1d1f; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; }
   .btn-primary:active { opacity: 0.8; }
@@ -68,6 +73,12 @@
   .game-name { font-weight: 600; font-size: 13px; }
   .game-meta { font-size: 11px; color: #6e6e73; margin-top: 2px; }
   .game-actions { display: flex; gap: 6px; align-items: center; }
+  .backup-section { background: #f0f7ff; border: 1px solid #c0d8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+  .backup-title { font-size: 11px; font-weight: 600; color: #0055cc; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .backup-note { font-size: 12px; color: #3a5a80; margin-top: 8px; line-height: 1.5; }
+  .offline-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: #856404; display: none; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1d1d1f; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; }
   .auto-updated { animation: flashField 0.5s ease; }
   @keyframes flashField { 0%,100%{background:transparent} 50%{background:#e8f4ff} }
   @media (max-width: 600px) {
@@ -80,6 +91,8 @@
 <body>
 <div class="app">
   <div class="app-title">HB Play Tracker</div>
+  <div class="offline-banner" id="offline-banner">&#9888; You are offline &mdash; the app is running from cache. All data is saved locally.</div>
+
   <div class="tabs">
     <button class="tab active" onclick="showTab('log')">Play Charting</button>
     <button class="tab" onclick="showTab('games')">Games</button>
@@ -149,6 +162,15 @@
   </div>
 
   <div id="tab-games" class="tab-content">
+    <div class="backup-section">
+      <div class="backup-title">&#128190; Backup &amp; Restore</div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="exportBackup()">&#8595; Export backup</button>
+        <button class="btn-secondary" onclick="document.getElementById('import-file').click()">&#8593; Import backup</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(event)" />
+      </div>
+      <div class="backup-note">Export saves all your games and plays as a JSON file. Import restores from that file &mdash; use this to transfer data between devices or recover after clearing your browser.</div>
+    </div>
     <div class="card">
       <div class="card-title">New game</div>
       <div class="row-3">
@@ -164,6 +186,8 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
 var PLAY_TYPE_MAP={'Alaska':'Run','American':'Run','Badger':'Run','Bear':'Run','Blood':'Run','Booger':'Run','Goat':'Run','Gorilla':'Run','Hogs':'Run','Jet':'Run','Same':'Run','Bell':'Pass','Bell Switch':'Pass','Bow':'Pass','Chop':'Pass','Depot':'Pass','Fist':'Pass','Fist Rip':'Pass','Levels':'Pass','Python':'Pass','RCA':'Pass','Smash':'Pass','Spears':'Pass','Sticks':'Pass','Y Low':'Pass','Fred':'Pass','Gator':'Pass','Hail':'Pass','Rain':'Pass','Seminole':'Pass','Stan':'Pass','Tony':'Pass','Train':'Pass'};
 var FORMATION_TYPE_MAP={'Money 1':'Pass','Money 2':'Run','Money 3':'Pass','Money 4':'Pass','Money 5':'Run','Money 6':'Pass'};
@@ -174,9 +198,31 @@ var NO_ADVANCE=['Incomplete'];
 var GAMES_KEY='hb_games',ACTIVE_KEY='hb_active_game';
 var games={},activeGameId=null,currentQ=1,lastQB='';
 
+// Service worker registration
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/hb-play-tracker/sw.js').then(function(reg){
+      console.log('SW registered');
+    }).catch(function(err){
+      console.log('SW registration failed:',err);
+    });
+  });
+}
+
+// Offline detection
+window.addEventListener('online', function(){ document.getElementById('offline-banner').style.display='none'; showToast('Back online'); });
+window.addEventListener('offline', function(){ document.getElementById('offline-banner').style.display='block'; showToast('Offline \u2014 using cached version'); });
+if(!navigator.onLine){ document.getElementById('offline-banner').style.display='block'; }
+
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+
 function saveAll(){try{localStorage.setItem(GAMES_KEY,JSON.stringify(games));if(activeGameId)localStorage.setItem(ACTIVE_KEY,activeGameId);}catch(e){}}
 function loadAll(){try{var g=localStorage.getItem(GAMES_KEY);if(g)games=JSON.parse(g);var a=localStorage.getItem(ACTIVE_KEY);if(a&&games[a])activeGameId=a;}catch(e){games={};}}
 function activePlays(){return activeGameId&&games[activeGameId]?games[activeGameId].plays:[];}
+
+function exportBackup(){var data={version:1,exported:new Date().toISOString(),games:games};var json=JSON.stringify(data,null,2);var a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(json);var d=new Date().toISOString().split('T')[0];a.download='HB_Play_Tracker_Backup_'+d+'.json';a.click();showToast('Backup exported');}
+
+function importBackup(event){var file=event.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(e){try{var data=JSON.parse(e.target.result);if(!data.games){alert('Invalid backup file.');return;}var count=Object.keys(data.games).length;var existing=Object.keys(games).length;var msg=existing>0?'This will merge with your '+existing+' existing game(s). '+count+' game(s) in backup will be added or updated. Continue?':'Load '+count+' game(s) from backup?';if(!confirm(msg))return;Object.keys(data.games).forEach(function(id){games[id]=data.games[id];});saveAll();updateCurrentGameBanner();loadScore();updateAllStats();renderLog();renderGameList();showToast('Backup restored \u2014 '+count+' game(s) loaded');}catch(err){alert('Could not read backup file.');}};reader.readAsText(file);event.target.value='';}
 
 function autoFormationType(){var f=document.getElementById('formation').value;var pt=FORMATION_TYPE_MAP[f];if(pt){setPlayType(pt);autoResult();}}
 function autoPlayType(){var play=document.getElementById('playtag').value;var pt=PLAY_TYPE_MAP[play];if(pt)setPlayType(pt);else document.getElementById('playtype').selectedIndex=0;autoResult();}
