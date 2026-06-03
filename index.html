@@ -88,10 +88,9 @@ button{cursor:pointer;font-family:inherit}
 .a-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
 .a-pane{display:none}
 .a-pane.active{display:block}
-.a-sl{font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px;display:flex;align-items:center;gap:6px}
-.a-sl span{flex:1;height:.5px;background:#f0f0f5}
-.a-card{background:#fff;border:.5px solid #e5e5ea;border-radius:12px;padding:12px 14px;margin-bottom:10px}
-.a-ct{font-size:11px;font-weight:600;color:#6e6e73;margin-bottom:8px}
+.a-sl{background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;border-radius:8px;margin:12px 0 8px}
+.a-card{background:#fff;border:.5px solid #e5e5ea;border-radius:12px;padding:12px 14px;margin-bottom:10px;overflow:hidden}
+.a-ct{font-size:11px;font-weight:600;color:#fff;background:#1a3a8c;padding:8px 14px;margin:-12px -14px 12px}
 .a-g5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
 .a-g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 .a-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
@@ -116,7 +115,7 @@ button{cursor:pointer;font-family:inherit}
 .a-yp{color:#34c759;font-weight:600}
 .a-ast{color:#cc7700}
 .a-fn{font-size:10px;color:#6e6e73;margin-top:6px;font-style:italic}
-.a-dh{font-size:12px;font-weight:600;color:#1d1d1f;padding:6px 0 8px;border-bottom:.5px solid #f0f0f5;margin-bottom:8px}
+.a-dh{font-size:12px;font-weight:600;color:#fff;background:#1a3a8c;padding:6px 10px;border-radius:6px;margin-bottom:8px}
 .a-db{margin-bottom:14px}
 .a-db:last-child{margin-bottom:0}
 </style>
@@ -683,7 +682,7 @@ function aH(tag,cls,content){ return '<'+tag+(cls?' class="'+cls+'"':'')+'>'+con
 function aStatCard(label,value){ return '<div class="a-stat"><div class="a-sl2">'+label+'</div><div class="a-sv">'+value+'</div></div>'; }
 function aStatCardSm(label,value){ return '<div class="a-stat"><div class="a-sl2">'+label+'</div><div class="a-svsm">'+value+'</div></div>'; }
 
-function aSection(label){ return '<div class="a-sl">'+label+' <span></span></div>'; }
+function aSection(label){ return '<div class="a-sl">'+label+'</div>'; }
 
 function aRpBar(rp) {
   return '<div class="a-card"><div class="a-ct">Run / pass split</div>'+
@@ -745,9 +744,9 @@ function aRenderSummary(gPlays, allPlays, g) {
     '<table class="a-tbl"><thead><tr><th class="l">Call</th><th class="l">Type</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+top5rows+'</tbody></table>'+
     (hasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
     '<div class="a-card"><div class="a-ct">Player stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:22%">Player</th><th>Att</th><th>Rush yds</th><th>Rec yds</th><th>Total</th><th>Tgts</th><th>Rec</th></tr></thead><tbody>'+playerRows+'</tbody></table></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+playerRows+'</tbody></table></div>'+
     '<div class="a-card"><div class="a-ct">QB stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:14%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Rush att</th><th>Rush yds</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div>'+
 
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') +
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
@@ -756,68 +755,71 @@ function aRenderSummary(gPlays, allPlays, g) {
     '<table class="a-tbl"><thead><tr><th class="l">Call</th><th class="l">Type</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+sTop5rows+'</tbody></table>'+
     (sHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
     '<div class="a-card"><div class="a-ct">Season player stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:22%">Player</th><th>Att</th><th>Rush yds</th><th>Rec yds</th><th>Total</th><th>Tgts</th><th>Rec</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div>'+
     '<div class="a-card"><div class="a-ct">Season QB stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:14%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Rush att</th><th>Rush yds</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div>';
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div>';
 }
 
 function aPlayerRows(plays) {
-  // Non-QB players only - group by player field
   var pm = {};
   plays.forEach(function(p) {
     var plyr = p.player;
-    if (!plyr || plyr==='\u2014' || plyr==='—') return;
-    // skip if this is a QB rushing play (handled in QB row)
+    if (!plyr || plyr==='—' || plyr==='—') return;
     var isQBRush = p.playtype==='Run' && p.qb && p.player===p.qb;
-    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,recYds:0,tgts:0,rec:0};
+    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,recYds:0,tgts:0,rec:0,recTDs:0};
     if (p.playtype==='Run' && !isQBRush) {
       pm[plyr].rushAtt++;
       pm[plyr].rushYds += p.yards;
+      if (p.result==='Touchdown') pm[plyr].rushTDs++;
     }
     if (p.playtype==='Pass') {
-      if (p.result==='Completion') { pm[plyr].recYds += p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
+      if (p.result==='Completion') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
       else if (p.result==='Incomplete') { pm[plyr].tgts++; }
+      else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
     }
   });
-  // Filter to players with any stats, sort by total yards
   return Object.keys(pm).map(function(k){
     var s = pm[k];
-    var total = s.rushYds + s.recYds;
-    return {name:k, s:s, total:total};
+    return {name:k, s:s, total:s.rushYds+s.recYds};
   }).filter(function(r){ return r.total>0||r.s.tgts>0||r.s.rushAtt>0; })
     .sort(function(a,b){ return b.total-a.total; })
     .map(function(r){
       var s = r.s;
+      var d = function(v){ return v?v:'—'; };
       return '<tr><td class="l">'+r.name+'</td>'+
-        '<td>'+(s.rushAtt||'—')+'</td>'+
-        '<td>'+(s.rushYds||'—')+'</td>'+
-        '<td>'+(s.recYds||'—')+'</td>'+
-        '<td>'+(r.total||'—')+'</td>'+
-        '<td>'+(s.tgts||'—')+'</td>'+
-        '<td>'+(s.rec||'—')+'</td></tr>';
+        '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
+        '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td></tr>';
     }).join('');
 }
 
 function aQBRow(plays) {
-  // Group by QB
   var qm = {};
   plays.forEach(function(p) {
     var qb = p.qb;
-    if (!qb || qb==='\u2014' || qb==='—') return;
-    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,rushAtt:0,rushYds:0,sacks:0,sackYds:0};
+    if (!qb || qb==='—' || qb==='—') return;
+    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
     if (p.playtype==='Pass') {
       if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
       else if (p.result==='Incomplete') { qm[qb].att++; }
+      else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
       else if (p.result==='Sack') { qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
     }
-    if (p.playtype==='Run' && p.player===qb) { qm[qb].rushAtt++; qm[qb].rushYds+=p.yards; }
+    if (p.playtype==='Run' && p.player===qb) {
+      qm[qb].rushAtt++; qm[qb].rushYds+=p.yards;
+      if (p.result==='Touchdown') qm[qb].rushTDs++;
+    }
   });
   return Object.keys(qm).map(function(qb){
     var s = qm[qb];
     var compPct = s.att ? Math.round(s.comp/s.att*100)+'%' : '—';
-    return '<tr><td class="l">'+qb+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td><td>'+s.passYds+'</td><td>'+(s.rushAtt||'—')+'</td><td>'+(s.rushYds||'—')+'</td><td>'+(s.sacks||'—')+'</td><td>'+(s.sackYds||'—')+'</td></tr>';
+    var d = function(v){ return v?v:'—'; };
+    return '<tr><td class="l">'+qb+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
+      '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td>'+
+      '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
+      '<td>'+d(s.sacks)+'</td><td>'+d(s.sackYds)+'</td></tr>';
   }).join('');
 }
+
 
 // ---- TENDENCIES ----
 
