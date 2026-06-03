@@ -89,8 +89,10 @@ button{cursor:pointer;font-family:inherit}
 .a-pane{display:none}
 .a-pane.active{display:block}
 .a-sl{background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;border-radius:8px;margin:12px 0 8px}
+.a-sl-season{background:#1d1d1f;color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;border-radius:8px;margin:12px 0 8px}
 .a-card{background:#fff;border:.5px solid #e5e5ea;border-radius:12px;padding:12px 14px;margin-bottom:10px;overflow:hidden}
 .a-ct{font-size:11px;font-weight:600;color:#fff;background:#1a3a8c;padding:8px 14px;margin:-12px -14px 12px}
+.a-ct-season{font-size:11px;font-weight:600;color:#fff;background:#1d1d1f;padding:8px 14px;margin:-12px -14px 12px}
 .a-g5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
 .a-g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 .a-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
@@ -678,11 +680,12 @@ function aRunPassSplit(plays) {
 }
 
 function aH(tag,cls,content){ return '<'+tag+(cls?' class="'+cls+'"':'')+'>'+content+'</'+tag+'>'; }
+function aCt(title,season){ return '<div class="'+(season?'a-ct-season':'a-ct')+'">'+title+'</div>'; }
 
 function aStatCard(label,value){ return '<div class="a-stat"><div class="a-sl2">'+label+'</div><div class="a-sv">'+value+'</div></div>'; }
 function aStatCardSm(label,value){ return '<div class="a-stat"><div class="a-sl2">'+label+'</div><div class="a-svsm">'+value+'</div></div>'; }
 
-function aSection(label){ return '<div class="a-sl">'+label+'</div>'; }
+function aSection(label,season){ return '<div class="'+(season?'a-sl-season':'a-sl')+'">'+label+'</div>'; }
 
 function aRpBar(rp) {
   return '<div class="a-card"><div class="a-ct">Run / pass split</div>'+
@@ -751,12 +754,12 @@ function aRenderSummary(gPlays, allPlays, g) {
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') +
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
     aRpBar(srp)+
-    '<div class="a-card"><div class="a-ct">Top 5 plays \u2014 season</div>'+
+    '<div class="a-card"><div class="a-ct-season">Top 5 plays \u2014 season</div>'+
     '<table class="a-tbl"><thead><tr><th class="l">Call</th><th class="l">Type</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+sTop5rows+'</tbody></table>'+
     (sHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-    '<div class="a-card"><div class="a-ct">Season player stats</div>'+
+    '<div class="a-card"><div class="a-ct-season">Season player stats</div>'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div>'+
-    '<div class="a-card"><div class="a-ct">Season QB stats</div>'+
+    '<div class="a-card"><div class="a-ct-season">Season QB stats</div>'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div>';
 }
 
@@ -902,7 +905,7 @@ function aRenderTendency(gPlays, allPlays) {
   el.innerHTML =
     aSection('This game') + tendencyHTML(gPlays) +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') +
-    '<div class="a-card"><div class="a-ct">3rd down tendencies by distance</div>'+
+    '<div class="a-card"><div class="a-ct-season">3rd down tendencies by distance</div>'+
     '<table class="a-tbl"><thead><tr><th class="l">Situation</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th>Conv rate</th></tr></thead><tbody>'+thirdDownDist(allPlays)+'</tbody></table></div>';
 }
 
@@ -1026,8 +1029,8 @@ function aRenderDefense(gPlays, allPlays) {
     aSection('This game') + defHTML(gPlays) +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') +
     '<div class="a-g2">'+
-    '<div class="a-card"><div class="a-ct">Season vs fronts</div><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div>'+
-    '<div class="a-card"><div class="a-ct">Season vs coverages</div><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div>';
+    '<div class="a-card"><div class="a-ct-season">Season vs fronts</div><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div>'+
+    '<div class="a-card"><div class="a-ct-season">Season vs coverages</div><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div>';
 }
 
 
