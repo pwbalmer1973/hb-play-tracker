@@ -191,6 +191,8 @@ button{cursor:pointer;font-family:inherit}
       <div class="fg"><label class="fl">Protection / Hole</label>
         <select id="hole">
           <option value="">&#8212;</option><option>1</option><option>2</option>
+          <option>10</option>
+          <option>11</option>
           <option>28</option><option>29</option><option>30</option><option>31</option>
           <option>40</option><option>41</option><option>50</option><option>51</option>
           <option>58</option><option>59</option><option>80</option><option>81</option>
@@ -1009,6 +1011,9 @@ function aRenderEfficiency(gPlays, allPlays) {
       '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
   }
 
+  el.innerHTML = aSection('This Game') + effCards(gPlays, false);
+}
+
 function aRenderDefense(gPlays, allPlays) {
   var el = document.getElementById('a-pane-defense');
   var gameCount = Object.keys(games).length;
@@ -1150,7 +1155,6 @@ function aRenderRedzone(gPlays, allPlays) {
     (sRZ.length ? rzTopCards(sRZ,true)+rzPlayLog(sRZ,false,true)+rzPlayLog(sRZ,true,true) : '<div class="a-fn" style="padding:8px 0">No red zone plays this season.</div>');
 }
 
-}
 </script>
 </body>
 </html>
