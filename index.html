@@ -381,7 +381,7 @@ function autoComp(){
   var r=document.getElementById('res');
   if(y==='') return;
   var yards=parseInt(y,10);
-  if(pt==='Pass'&&(r.value===''||r.value==='Completion')){
+  if((pt==='Pass'||pt==='Toss')&&(r.value===''||r.value==='Completion')){
     r.value='Completion';
   } else if((pt==='Run'||pt==='Toss')&&(r.value===''||r.value==='Gain'||r.value==='Loss')){
     r.value=yards>=0?'Gain':'Loss';
@@ -506,7 +506,7 @@ function renderLog(){
   var rows=[].concat(ps).reverse().map(function(p){
     var yc=p.yards>0?'yp':p.yards<0?'yn':'yz';
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
-    var tc=TC[p.playtype]||'';
+    var tc=TC[p.playtype==='Toss'?'Pass':p.playtype]||'';
     var ni=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';
     return '<tr>'+
       '<td style="width:70px">'+p.down+' &amp; '+p.dist+'</td>'+
@@ -696,7 +696,7 @@ function a3rdConv(plays) {
 
 function aRunPassSplit(plays) {
   var run = plays.filter(function(p){ return p.playtype==='Run'; });
-  var pass = plays.filter(function(p){ return p.playtype==='Pass'; });
+  var pass = plays.filter(function(p){ return p.playtype==='Pass'||p.playtype==='Toss'; });
   var n = plays.length || 1;
   return {
     runN:run.length, passN:pass.length,
@@ -791,7 +791,7 @@ function aPlayerRows(plays) {
       pm[plyr].rushYds += p.yards;
       if (p.result==='Touchdown') pm[plyr].rushTDs++;
     }
-    if (p.playtype==='Pass') {
+    if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
       else if (p.result==='Incomplete') { pm[plyr].tgts++; }
       else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
@@ -817,7 +817,7 @@ function aQBRow(plays) {
     var qb = p.qb;
     if (!qb || qb==='—') return;
     if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
-    if (p.playtype==='Pass') {
+    if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
       else if (p.result==='Incomplete') { qm[qb].att++; }
       else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
@@ -1023,13 +1023,13 @@ function aRenderDefense(gPlays, allPlays) {
     var frontGroups = aGroupBy(plays.filter(function(p){return p.defFront&&p.defFront!=='—';}),function(p){return p.defFront;});
     var frontRows = aTableRows(frontGroups).map(function(r){
       var run=r.plays.filter(function(p){return p.playtype==='Run';});
-      var pass=r.plays.filter(function(p){return p.playtype==='Pass';});
+      var pass=r.plays.filter(function(p){return p.playtype==='Pass'||p.playtype==='Toss';});
       return '<tr><td class="l">'+r.key+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td><td>'+(run.length?aAvg(run).toFixed(1):'—')+'</td><td>'+(pass.length?aAvg(pass).toFixed(1):'—')+'</td></tr>';
     }).join('');
 
     var covGroups = aGroupBy(plays.filter(function(p){return p.coverage&&p.coverage!=='—';}),function(p){return p.coverage;});
     var covRows = aTableRows(covGroups).map(function(r){
-      var passPlays=r.plays.filter(function(p){return p.playtype==='Pass';});
+      var passPlays=r.plays.filter(function(p){return p.playtype==='Pass'||p.playtype==='Toss';});
       var comps=passPlays.filter(function(p){return p.result==='Completion'||p.result==='Touchdown';});
       var compPct=passPlays.length?Math.round(comps.length/passPlays.length*100)+'%':'—';
       return '<tr><td class="l">'+r.key+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td><td>'+compPct+'</td></tr>';
@@ -1060,7 +1060,7 @@ function aRenderDefense(gPlays, allPlays) {
     });
 
     // Coverage by play call (pass plays)
-    var passPlays = plays.filter(function(p){return p.playtype==='Pass'&&p.coverage&&p.coverage!=='—';});
+    var passPlays = plays.filter(function(p){return (p.playtype==='Pass'||p.playtype==='Toss')&&p.coverage&&p.coverage!=='—';});
     var cpGroups = aGroupBy(passPlays, function(p){return p.call+'|||'+p.coverage;});
     var cpRows = aTableRows(cpGroups).map(function(r){
       var parts=r.key.split('|||');
@@ -1083,7 +1083,7 @@ function aRenderDefense(gPlays, allPlays) {
   var sFrontRows = aTableRows(sFrontGroups).map(function(r){
     return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
   }).join('');
-  var sCovGroups = aGroupBy(allPlays.filter(function(p){return p.coverage&&p.coverage!=='—'&&p.playtype==='Pass';}),function(p){return p.coverage;});
+  var sCovGroups = aGroupBy(allPlays.filter(function(p){return p.coverage&&p.coverage!=='—'&&(p.playtype==='Pass'||p.playtype==='Toss');}),function(p){return p.coverage;});
   var sCovRows = aTableRows(sCovGroups).map(function(r){
     var comps=r.plays.filter(function(p){return p.result==='Completion'||p.result==='Touchdown';});
     var compPct=r.plays.length?Math.round(comps.length/r.plays.length*100)+'%':'—';
