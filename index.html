@@ -750,6 +750,67 @@ function aIsRedZone(play) {
   return !isNaN(num) && num <= 20;
 }
 
+
+function aPlayerRows(plays) {
+  var pm = {};
+  plays.forEach(function(p) {
+    var plyr = p.player;
+    if (!plyr || plyr==='—') return;
+    var isQBRush = p.playtype==='Run' && p.qb && p.player===p.qb;
+    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,recYds:0,tgts:0,rec:0,recTDs:0};
+    if (p.playtype==='Run' && !isQBRush) {
+      pm[plyr].rushAtt++;
+      pm[plyr].rushYds += p.yards;
+      if (p.result==='Touchdown') pm[plyr].rushTDs++;
+    }
+    if (p.playtype==='Pass') {
+      if (p.result==='Completion') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
+      else if (p.result==='Incomplete') { pm[plyr].tgts++; }
+      else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
+    }
+  });
+  return Object.keys(pm).map(function(k){
+    var s = pm[k];
+    return {name:k, s:s, total:s.rushYds+s.recYds};
+  }).filter(function(r){ return r.total>0||r.s.tgts>0||r.s.rushAtt>0; })
+    .sort(function(a,b){ return b.total-a.total; })
+    .map(function(r){
+      var s = r.s;
+      var d = function(v){ return v?v:'—'; };
+      return '<tr><td class="l">'+r.name+'</td>'+
+        '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
+        '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td></tr>';
+    }).join('');
+}
+
+function aQBRow(plays) {
+  var qm = {};
+  plays.forEach(function(p) {
+    var qb = p.qb;
+    if (!qb || qb==='—') return;
+    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
+    if (p.playtype==='Pass') {
+      if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
+      else if (p.result==='Incomplete') { qm[qb].att++; }
+      else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
+      else if (p.result==='Sack') { qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
+    }
+    if (p.playtype==='Run' && p.player===qb) {
+      qm[qb].rushAtt++; qm[qb].rushYds+=p.yards;
+      if (p.result==='Touchdown') qm[qb].rushTDs++;
+    }
+  });
+  return Object.keys(qm).map(function(qb){
+    var s = qm[qb];
+    var compPct = s.att ? Math.round(s.comp/s.att*100)+'%' : '—';
+    var d = function(v){ return v?v:'—'; };
+    return '<tr><td class="l">'+qb+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
+      '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td>'+
+      '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
+      '<td>'+d(s.sacks)+'</td><td>'+d(s.sackYds)+'</td></tr>';
+  }).join('');
+}
+
 function aRenderSummary(gPlays, allPlays, g) {
   var el = document.getElementById('a-pane-summary');
   var conv = a3rdConv(gPlays);
