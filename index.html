@@ -185,6 +185,9 @@ button{cursor:pointer;font-family:inherit}
           <option>Trips</option><option>Trips Left</option><option>Windy</option>
         </select>
       </div>
+      <div class="fg"><label class="fl">Motion</label>
+        <select id="mot" onchange="autoHoleType()"><option value="">&#8212;</option><option>mo</option><option>Z mo</option><option>A mo</option><option>orb</option></select>
+      </div>
       <div class="fg"><label class="fl">Protection / Hole</label>
         <select id="hole">
           <option value="">&#8212;</option><option>1</option><option>2</option>
@@ -195,9 +198,6 @@ button{cursor:pointer;font-family:inherit}
           <option>86</option><option>87</option><option>88</option><option>89</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">Motion</label>
-        <select id="mot"><option value="">&#8212;</option><option>A mo</option><option>Z mo</option><option>Z in</option><option>mo Hurricane</option></select>
-      </div>
       <div class="fg"><label class="fl">Play</label>
         <select id="play" onchange="playType()">
           <option value="">&#8212;</option><option>Alaska</option><option>American</option><option>Badger</option>
@@ -205,6 +205,7 @@ button{cursor:pointer;font-family:inherit}
           <option>Booger</option><option>Bow</option><option>Chop</option><option>Depot</option>
           <option>Fist</option><option>Fist Rip</option><option>Fred</option><option>Gator</option>
           <option>Goat</option><option>Gorilla</option><option>Hail</option><option>Hogs</option>
+          <option>Hurricane</option>
           <option>Jet</option><option>Levels</option><option>Python</option><option>Rain</option>
           <option>RCA</option><option>Same</option><option>Seminole</option><option>Smash</option>
           <option>Spears</option><option>Stan</option><option>Sticks</option><option>Tony</option>
@@ -214,17 +215,21 @@ button{cursor:pointer;font-family:inherit}
     </div>
     <div class="r4">
       <div class="fg"><label class="fl">Play type</label>
-        <select id="ptype" onchange="autoComp()"><option value="">&#8212;</option><option value="Run">Run</option><option value="Pass">Pass</option></select>
+        <select id="ptype" onchange="autoComp()"><option value="">&#8212;</option><option value="Run">Run</option><option value="Pass">Pass</option><option value="Toss">Toss</option></select>
       </div>
       <div class="fg"><label class="fl">Yards gained / lost</label>
         <input type="number" id="yds" placeholder="e.g. 5 or -2" oninput="autoComp()">
       </div>
       <div class="fg"><label class="fl">Result</label>
         <select id="res" onchange="tdYards()">
-          <option value="">&#8212;</option><option value="Completion">Completion</option>
-          <option value="Fumble">Fumble</option><option value="Fumble recovered">Fumble &#8212; recovered</option>
-          <option value="Incomplete">Incomplete</option><option value="Interception">Interception</option>
-          <option value="1st down">1st down</option><option value="Out of bounds">Out of bounds</option>
+          <option value="">&#8212;</option>
+          <option value="Gain">Gain</option>
+          <option value="Loss">Loss</option>
+          <option value="Completion">Completion</option>
+          <option value="Fumble">Fumble</option>
+          <option value="Incomplete">Incomplete</option>
+          <option value="Interception">Interception</option>
+          <option value="1st down">1st down</option>
           <option value="Penalty defense">Penalty &#8212; defense</option>
           <option value="Penalty offense">Penalty &#8212; offense</option>
           <option value="Sack">Sack</option><option value="Safety">Safety</option>
@@ -297,7 +302,7 @@ button{cursor:pointer;font-family:inherit}
 
 <div class="toast" id="toast"></div>
 <script>
-var PTM={Alaska:'Run',American:'Run',Badger:'Run',Bear:'Run',Blood:'Run',Booger:'Run',Goat:'Run',Gorilla:'Run',Hogs:'Run',Jet:'Run',Same:'Run',Bell:'Pass','Bell Switch':'Pass',Bow:'Pass',Chop:'Pass',Depot:'Pass',Fist:'Pass','Fist Rip':'Pass',Levels:'Pass',Python:'Pass',RCA:'Pass',Smash:'Pass',Spears:'Pass',Sticks:'Pass','Y Low':'Pass',Fred:'Pass',Gator:'Pass',Hail:'Pass',Rain:'Pass',Seminole:'Pass',Stan:'Pass',Tony:'Pass',Train:'Pass'};
+var PTM={'Alaska':'Run','American':'Run','Badger':'Run','Bear':'Run','Blood':'Run','Booger':'Run','Goat':'Run','Gorilla':'Run','Hogs':'Run','Jet':'Run','Bell':'Pass','Bell Switch':'Pass','Bow':'Pass','Chop':'Pass','Depot':'Pass','Fist':'Pass','Fist Rip':'Pass','Hurricane':'Pass','Levels':'Pass','Python':'Pass','RCA':'Pass','Smash':'Pass','Spears':'Pass','Sticks':'Pass','Y Low':'Pass','Fred':'Pass','Gator':'Pass','Hail':'Pass','Rain':'Pass','Seminole':'Pass','Stan':'Pass','Tony':'Pass','Train':'Pass','Same':'Toss'};
 var FTM={'Money 1':'Pass','Money 2':'Run','Money 3':'Pass','Money 4':'Pass','Money 5':'Run','Money 6':'Pass'};
 var TC={Run:'pr',Pass:'pp'};
 var DOWNS=['1st','2nd','3rd','4th'];
@@ -340,6 +345,7 @@ function tdYards(){
 // Auto-fill play type from play name
 function playType(){
   var p=document.getElementById('play').value;
+  if(p==='Same'){ setPT('Toss'); autoComp(); return; }
   var pt=PTM[p];
   if(pt)setPT(pt);else document.getElementById('ptype').selectedIndex=0;
   autoComp();
@@ -354,12 +360,29 @@ function setPT(pt){
   for(var i=0;i<s.options.length;i++){if(s.options[i].value===pt){s.selectedIndex=i;break;}}
 }
 // Auto-fill Completion for pass plays
+
+function autoHoleType(){
+  var hole=document.getElementById('hole').value;
+  var pt=document.getElementById('ptype');
+  var play=document.getElementById('play').value;
+  var HOLE_PASS=['10','11','28','29','30','40','41'];
+  if(!hole) return;
+  // Same always = Toss
+  if(play==='Same'){ setPT('Toss'); return; }
+  if(HOLE_PASS.indexOf(hole)>=0) setPT('Pass');
+  else setPT('Run');
+  autoComp();
+}
 function autoComp(){
   var pt=document.getElementById('ptype').value;
   var y=document.getElementById('yds').value;
   var r=document.getElementById('res');
-  if(pt==='Pass'&&y!==''&&(r.value===''||r.value==='Completion')){
+  if(y==='') return;
+  var yards=parseInt(y,10);
+  if(pt==='Pass'&&(r.value===''||r.value==='Completion')){
     r.value='Completion';
+  } else if((pt==='Run'||pt==='Toss')&&(r.value===''||r.value==='Gain'||r.value==='Loss')){
+    r.value=yards>=0?'Gain':'Loss';
   }
 }
 
@@ -446,7 +469,7 @@ function logPlay(){
   var yards=parseInt(yr,10);
   var res=document.getElementById('res').value||'\u2014';
   var qbv=document.getElementById('qb').value.trim()||lastQB;
-  var call=[document.getElementById('form').value,document.getElementById('hole').value,document.getElementById('mot').value,document.getElementById('play').value].filter(Boolean).join(' ');
+  var call=[document.getElementById('form').value,document.getElementById('mot').value,document.getElementById('hole').value,document.getElementById('play').value].filter(Boolean).join(' ');
   var p={
     id:Date.now(),num:ps.length+1,quarter:Q,
     down:dn,dist:dist,hash:document.getElementById('hsh').value,
@@ -465,7 +488,7 @@ function logPlay(){
   save();updateStats();renderLog();
   afterPlay(res,yards,dist,dIdx,side,yl);
   ['yds','plyr','notes'].forEach(function(i){document.getElementById(i).value='';});
-  ['res','form','hole','mot','play','ptype','dfront','cov'].forEach(function(i){document.getElementById(i).selectedIndex=0;});
+  ['res','form','mot','hole','play','ptype','dfront','cov'].forEach(function(i){document.getElementById(i).selectedIndex=0;});
 }
 
 function delPlay(id){
@@ -690,18 +713,21 @@ function aStatCardSm(label,value){ return '<div class="a-stat"><div class="a-sl2
 
 function aSection(label,season){ return '<div class="'+(season?'a-sl-season':'a-sl')+'">'+label+'</div>'; }
 
-function aRpBar(rp) {
-  return '<div class="a-card"><div class="a-ct">Run / pass split</div>'+
+function aRpBar(rp, season) {
+  var ct = season ? 'a-ct-season' : 'a-ct';
+  return '<div class="a-card"><div class="'+ct+'">Run / Pass Split</div>'+
+    '<div style="padding:12px 14px">'+
     '<div class="a-rpbar"><div style="width:'+rp.runPct+'%;background:#1a7a3c;height:8px"></div><div style="width:'+rp.passPct+'%;background:#1a3a8c;height:8px"></div></div>'+
     '<div class="a-rpleg"><span><span class="a-rpdot" style="background:#1a7a3c"></span>Run '+rp.runPct+'% ('+rp.runN+' plays, '+rp.runAvg+' avg)</span>'+
-    '<span><span class="a-rpdot" style="background:#1a3a8c"></span>Pass '+rp.passPct+'% ('+rp.passN+' plays, '+rp.passAvg+' avg)</span></div></div>';
+    '<span><span class="a-rpdot" style="background:#1a3a8c"></span>Pass '+rp.passPct+'% ('+rp.passN+' plays, '+rp.passAvg+' avg)</span></div>'+
+    '</div></div>';
 }
 
 // ---- SUMMARY ----
 
 
 // ---- PLAY PARSING HELPERS ----
-var MOTIONS = ['A mo','Z mo','Z in','mo Hurricane'];
+var MOTIONS = ['Z mo','A mo','mo','orb'];
 var MONEY_FORMS = ['Money 1','Money 2','Money 3','Money 4','Money 5','Money 6'];
 
 function aGetFormation(call) {
@@ -852,22 +878,22 @@ function aRenderSummary(gPlays, allPlays, g) {
   var sQBRow = aQBRow(allPlays);
 
   el.innerHTML =
-    aSection('This game') +
+    aSection('This Game') +
     '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
-    aRpBar(rp)+
+    aRpBar(rp,false)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
-    '<div class="a-card"><div class="a-ct">Player stats</div><div style="padding:12px 14px">'+
+    '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
-    '<div class="a-card"><div class="a-ct">QB stats</div><div style="padding:12px 14px">'+
+    '<div class="a-card"><div class="a-ct">QB Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
-    aRpBar(srp)+
+    aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
-    '<div class="a-card"><div class="a-ct-season">Season player stats</div><div style="padding:12px 14px">'+
+    '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
-    '<div class="a-card"><div class="a-ct-season">Season QB stats</div><div style="padding:12px 14px">'+
+    '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
 }
 
@@ -923,13 +949,13 @@ function aRenderTendency(gPlays, allPlays) {
     }).join('');
 
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="a-ct">Top formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Plays</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="a-ct">Top plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
-      '<div class="a-card"><div class="a-ct">By down — summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
-      '<div class="a-card"><div class="a-ct">Formations &amp; plays by down</div><div style="padding:12px 14px">'+downDetail+'</div></div>';
+      '<div class="a-card"><div class="a-ct">Top Formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Plays</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="a-ct">Top Plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
+      '<div class="a-card"><div class="a-ct">By Down — Summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
+      '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Down</div><div style="padding:12px 14px">'+downDetail+'</div></div>';
   }
 
-  el.innerHTML = aSection('This game') + summaryCard(gPlays);
+  el.innerHTML = aSection('This Game') + summaryCard(gPlays);
 }
 
 function aRenderEfficiency(gPlays, allPlays) {
@@ -977,14 +1003,11 @@ function aRenderEfficiency(gPlays, allPlays) {
     }).join('');
 
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="'+ct+'">Best plays by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Best formations by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
-      '<div class="a-card"><div class="'+ct+'">3rd down conversion rate</div><div style="padding:12px 14px"><div class="a-g3" style="margin-bottom:0">'+aStatCard('Attempts',conv.att)+aStatCard('Conversions',conv.conv)+aStatCard('Conv rate',conv.pct)+'</div></div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Formations &amp; plays by hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
+      '<div class="a-card"><div class="'+ct+'">Best Formations By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Best Plays By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">3rd Down Conversion Rate</div><div style="padding:12px 14px"><div class="a-g3" style="margin-bottom:0">'+aStatCard('Attempts',conv.att)+aStatCard('Conversions',conv.conv)+aStatCard('Conv Rate',conv.pct)+'</div></div></div>'+
+      '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
   }
-
-  el.innerHTML = aSection('This game') + effCards(gPlays, false);
-}
 
 function aRenderDefense(gPlays, allPlays) {
   var el = document.getElementById('a-pane-defense');
@@ -1041,12 +1064,12 @@ function aRenderDefense(gPlays, allPlays) {
     var hasCPAst = aTableRows(cpGroups).some(function(r){return r.skewed;});
 
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="'+ct+'">Fronts faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th><th>Run avg</th><th>Pass avg</th></tr></thead><tbody>'+frontRows+'</tbody></table></div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Coverages faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+covRows+'</tbody></table></div></div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Fronts by formation</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Fronts Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th><th>Run avg</th><th>Pass avg</th></tr></thead><tbody>'+frontRows+'</tbody></table></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Coverages Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+covRows+'</tbody></table></div></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Fronts By Formation</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l" style="width:35%">Formation</th><th class="l" style="width:25%">Front</th><th style="width:18%">Count</th><th style="width:18%">Avg</th></tr></thead><tbody>'+ffRows+'</tbody></table>'+
       (hasFFAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Coverage by play call</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Coverage By Play Call</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l" style="width:42%">Play call</th><th class="l" style="width:22%">Coverage</th><th style="width:16%">Count</th><th style="width:16%">Avg</th></tr></thead><tbody>'+cpRows+'</tbody></table>'+
       (hasCPAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>';
   }
@@ -1063,11 +1086,11 @@ function aRenderDefense(gPlays, allPlays) {
   }).join('');
 
   el.innerHTML =
-    aSection('This game') + defHTML(gPlays, false) +
+    aSection('This Game') + defHTML(gPlays, false) +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g2">'+
-    '<div class="a-card"><div class="a-ct-season">Season vs fronts</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div></div>'+
-    '<div class="a-card"><div class="a-ct-season">Season vs coverages</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div></div>';
+    '<div class="a-card"><div class="a-ct-season">Season Vs Fronts</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div></div>'+
+    '<div class="a-card"><div class="a-ct-season">Season Vs Coverages</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div></div>';
 }
 
 // ---- RED ZONE ----
@@ -1090,8 +1113,8 @@ function aRenderRedzone(gPlays, allPlays) {
     }).join('');
     var hasFormAst = aTableRows(fg).some(function(r){return r.skewed;});
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="'+ct+'">Best plays by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Best formations by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
+      '<div class="a-card"><div class="'+ct+'">Best Formations By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Best Plays By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
   }
 
   function rzPlayLog(plays, tdsOnly, season) {
@@ -1121,12 +1144,13 @@ function aRenderRedzone(gPlays, allPlays) {
   var sRZ = rzPlays(allPlays);
 
   el.innerHTML =
-    aSection('This game') +
+    aSection('This Game') +
     (gRZ.length ? rzTopCards(gRZ,false)+rzPlayLog(gRZ,false,false)+rzPlayLog(gRZ,true,false) : '<div class="a-fn" style="padding:8px 0">No red zone plays this game.</div>') +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     (sRZ.length ? rzTopCards(sRZ,true)+rzPlayLog(sRZ,false,true)+rzPlayLog(sRZ,true,true) : '<div class="a-fn" style="padding:8px 0">No red zone plays this season.</div>');
 }
 
+}
 </script>
 </body>
 </html>
