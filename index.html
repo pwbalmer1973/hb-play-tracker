@@ -88,7 +88,7 @@ button{cursor:pointer;font-family:inherit}
 .a-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
 .a-pane{display:none}
 .a-pane.active{display:block}
-.a-sl{background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;border-radius:8px;margin:12px 0 8px}
+.a-sl{background:#1d1d1f;color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;border-radius:8px;margin:12px 0 8px}
 .a-sl-season{background:#1d1d1f;color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;border-radius:8px;margin:12px 0 8px}
 .a-card{background:#fff;border:.5px solid #e5e5ea;border-radius:12px;padding:12px 14px;margin-bottom:10px;overflow:hidden}
 .a-ct{font-size:11px;font-weight:600;color:#fff;background:#1a3a8c;padding:8px 14px;margin:-12px -14px 12px}
@@ -285,12 +285,14 @@ button{cursor:pointer;font-family:inherit}
       <button class="a-stab" onclick="aTab('tendency',this)">Play tendencies</button>
       <button class="a-stab" onclick="aTab('efficiency',this)">Efficiency</button>
       <button class="a-stab" onclick="aTab('defense',this)">Defensive looks</button>
+      <button class="a-stab" onclick="aTab('redzone',this)">Red zone</button>
     </div>
   </div>
   <div id="a-pane-summary" class="a-pane active"></div>
   <div id="a-pane-tendency" class="a-pane"></div>
   <div id="a-pane-efficiency" class="a-pane"></div>
   <div id="a-pane-defense" class="a-pane"></div>
+  <div id="a-pane-redzone" class="a-pane"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -444,7 +446,7 @@ function logPlay(){
   var yards=parseInt(yr,10);
   var res=document.getElementById('res').value||'\u2014';
   var qbv=document.getElementById('qb').value.trim()||lastQB;
-  var call=[document.getElementById('form').value,document.getElementById('mot').value,document.getElementById('hole').value,document.getElementById('play').value].filter(Boolean).join(' ');
+  var call=[document.getElementById('form').value,document.getElementById('hole').value,document.getElementById('mot').value,document.getElementById('play').value].filter(Boolean).join(' ');
   var p={
     id:Date.now(),num:ps.length+1,quarter:Q,
     down:dn,dist:dist,hash:document.getElementById('hsh').value,
@@ -613,6 +615,7 @@ function aRender() {
   aRenderTendency(selGame.plays, allPlays);
   aRenderEfficiency(selGame.plays, allPlays);
   aRenderDefense(selGame.plays, allPlays);
+  aRenderRedzone(selGame.plays, allPlays);
 }
 
 // ---- HELPERS ----
@@ -696,6 +699,57 @@ function aRpBar(rp) {
 
 // ---- SUMMARY ----
 
+
+// ---- PLAY PARSING HELPERS ----
+var MOTIONS = ['A mo','Z mo','Z in','mo Hurricane'];
+var MONEY_FORMS = ['Money 1','Money 2','Money 3','Money 4','Money 5','Money 6'];
+
+function aGetFormation(call) {
+  if (!call) return '';
+  // Money formations are always two tokens
+  for (var i=0; i<MONEY_FORMS.length; i++) {
+    if (call === MONEY_FORMS[i] || call.indexOf(MONEY_FORMS[i]+' ')===0) return MONEY_FORMS[i];
+  }
+  return call.split(' ')[0] || '';
+}
+
+function aGetPlay(call) {
+  if (!call) return '';
+  // Money is its own play
+  for (var i=0; i<MONEY_FORMS.length; i++) {
+    if (call === MONEY_FORMS[i]) return MONEY_FORMS[i];
+  }
+  // Last token that is not a motion
+  var parts = call.split(' ');
+  for (var j=parts.length-1; j>=0; j--) {
+    // Check if this token (or multi-word motion) is a motion
+    var isMotion = false;
+    for (var k=0; k<MOTIONS.length; k++) {
+      var mparts = MOTIONS[k].split(' ');
+      if (mparts.length > 1) {
+        // multi-word motion - check if ends here
+        if (j >= mparts.length-1) {
+          var chunk = parts.slice(j-mparts.length+1, j+1).join(' ');
+          if (chunk === MOTIONS[k]) { isMotion = true; j = j-mparts.length+1; break; }
+        }
+      } else if (parts[j] === MOTIONS[k]) {
+        isMotion = true; break;
+      }
+    }
+    if (!isMotion) return parts[j] || '';
+  }
+  return parts[parts.length-1] || '';
+}
+
+function aIsRedZone(play) {
+  if (!play.yardline) return false;
+  var yl = play.yardline;
+  // Must be opponent territory (OP) and within 20
+  if (yl.indexOf('OP ') !== 0 && yl.indexOf('Their ') !== 0) return false;
+  var num = parseInt(yl.replace('OP ','').replace('Their ',''), 10);
+  return !isNaN(num) && num <= 20;
+}
+
 function aRenderSummary(gPlays, allPlays, g) {
   var el = document.getElementById('a-pane-summary');
   var conv = a3rdConv(gPlays);
@@ -705,37 +759,34 @@ function aRenderSummary(gPlays, allPlays, g) {
   var avg = n ? (tot/n).toFixed(1) : '—';
   var tds = gPlays.filter(function(p){return p.result==='Touchdown';}).length;
 
-  // Top 5 plays by yards (single plays sorted desc)
-  var sorted = [].concat(gPlays).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
-  // For each, count total uses of same call and check skew
-  var callGroups = aGroupBy(gPlays, function(p){return p.call;});
-  var top5rows = sorted.map(function(p){
-    var cg = callGroups[p.call]||[p];
-    var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
-    return '<tr><td class="l">'+p.call+' '+star+'</td><td class="l">'+aTypePill(p.playtype)+'</td><td>'+cg.length+'</td><td class="a-yp">+'+p.yards+'</td></tr>';
-  }).join('');
-  var hasAst = sorted.some(function(p){ return aSkewed(callGroups[p.call]||[p]); });
+  function top5HTML(plays, type) {
+    var filtered = plays.filter(function(p){ return p.playtype===type; });
+    var callGroups = aGroupBy(filtered, function(p){return p.call;});
+    var sorted = [].concat(filtered).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
+    var seen = {};
+    var rows = sorted.map(function(p){
+      var cg = callGroups[p.call]||[p];
+      var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
+      return '<tr><td class="l">'+p.call+' '+star+'</td><td>'+cg.length+'</td><td class="a-yp">+'+p.yards+'</td></tr>';
+    }).join('');
+    var hasAst = sorted.some(function(p){ return aSkewed(callGroups[p.call]||[p]); });
+    var title = 'Top 5 '+type+' plays';
+    return '<div class="a-card"><div class="a-ct">'+title+'</div><div style="padding:12px 14px">'+
+      '<table class="a-tbl"><thead><tr><th class="l">Call</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+
+      (rows||'<tr><td class="l" colspan="3">No '+type.toLowerCase()+' plays</td></tr>')+
+      '</tbody></table>'+(hasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>';
+  }
 
-  // Player stats
   var playerRows = aPlayerRows(gPlays);
   var qbRow = aQBRow(gPlays);
 
   // Season
+  var gameCount = Object.keys(games).length;
   var sn = allPlays.length;
   var stot = allPlays.reduce(function(s,p){return s+p.yards;},0);
-  var gameCount = Object.keys(games).length;
   var sConv = a3rdConv(allPlays);
   var srp = aRunPassSplit(allPlays);
   var sTDs = allPlays.filter(function(p){return p.result==='Touchdown';}).length;
-
-  var sCallGroups = aGroupBy(allPlays, function(p){return p.call;});
-  var sSorted = [].concat(allPlays).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
-  var sTop5rows = sSorted.map(function(p){
-    var cg = sCallGroups[p.call]||[p];
-    var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
-    return '<tr><td class="l">'+p.call+' '+star+'</td><td class="l">'+aTypePill(p.playtype)+'</td><td>'+cg.length+'</td><td class="a-yp">+'+p.yards+'</td></tr>';
-  }).join('');
-  var sHasAst = sSorted.some(function(p){ return aSkewed(sCallGroups[p.call]||[p]); });
   var sPlayerRows = aPlayerRows(allPlays);
   var sQBRow = aQBRow(allPlays);
 
@@ -743,138 +794,67 @@ function aRenderSummary(gPlays, allPlays, g) {
     aSection('This game') +
     '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
     aRpBar(rp)+
-    '<div class="a-card"><div class="a-ct">Top 5 plays \u2014 sorted by yards gained</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l">Call</th><th class="l">Type</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+top5rows+'</tbody></table>'+
-    (hasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-    '<div class="a-card"><div class="a-ct">Player stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+playerRows+'</tbody></table></div>'+
-    '<div class="a-card"><div class="a-ct">QB stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div>'+
+    '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
+    '<div class="a-card"><div class="a-ct">Player stats</div><div style="padding:12px 14px">'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
+    '<div class="a-card"><div class="a-ct">QB stats</div><div style="padding:12px 14px">'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
-    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') +
+    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
     aRpBar(srp)+
-    '<div class="a-card"><div class="a-ct-season">Top 5 plays \u2014 season</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l">Call</th><th class="l">Type</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+sTop5rows+'</tbody></table>'+
-    (sHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-    '<div class="a-card"><div class="a-ct-season">Season player stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div>'+
-    '<div class="a-card"><div class="a-ct-season">Season QB stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div>';
+    '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
+    '<div class="a-card"><div class="a-ct-season">Season player stats</div><div style="padding:12px 14px">'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
+    '<div class="a-card"><div class="a-ct-season">Season QB stats</div><div style="padding:12px 14px">'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
 }
-
-function aPlayerRows(plays) {
-  var pm = {};
-  plays.forEach(function(p) {
-    var plyr = p.player;
-    if (!plyr || plyr==='—' || plyr==='—') return;
-    var isQBRush = p.playtype==='Run' && p.qb && p.player===p.qb;
-    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,recYds:0,tgts:0,rec:0,recTDs:0};
-    if (p.playtype==='Run' && !isQBRush) {
-      pm[plyr].rushAtt++;
-      pm[plyr].rushYds += p.yards;
-      if (p.result==='Touchdown') pm[plyr].rushTDs++;
-    }
-    if (p.playtype==='Pass') {
-      if (p.result==='Completion') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
-      else if (p.result==='Incomplete') { pm[plyr].tgts++; }
-      else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
-    }
-  });
-  return Object.keys(pm).map(function(k){
-    var s = pm[k];
-    return {name:k, s:s, total:s.rushYds+s.recYds};
-  }).filter(function(r){ return r.total>0||r.s.tgts>0||r.s.rushAtt>0; })
-    .sort(function(a,b){ return b.total-a.total; })
-    .map(function(r){
-      var s = r.s;
-      var d = function(v){ return v?v:'—'; };
-      return '<tr><td class="l">'+r.name+'</td>'+
-        '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
-        '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td></tr>';
-    }).join('');
-}
-
-function aQBRow(plays) {
-  var qm = {};
-  plays.forEach(function(p) {
-    var qb = p.qb;
-    if (!qb || qb==='—' || qb==='—') return;
-    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
-    if (p.playtype==='Pass') {
-      if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
-      else if (p.result==='Incomplete') { qm[qb].att++; }
-      else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
-      else if (p.result==='Sack') { qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
-    }
-    if (p.playtype==='Run' && p.player===qb) {
-      qm[qb].rushAtt++; qm[qb].rushYds+=p.yards;
-      if (p.result==='Touchdown') qm[qb].rushTDs++;
-    }
-  });
-  return Object.keys(qm).map(function(qb){
-    var s = qm[qb];
-    var compPct = s.att ? Math.round(s.comp/s.att*100)+'%' : '—';
-    var d = function(v){ return v?v:'—'; };
-    return '<tr><td class="l">'+qb+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
-      '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td>'+
-      '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
-      '<td>'+d(s.sacks)+'</td><td>'+d(s.sackYds)+'</td></tr>';
-  }).join('');
-}
-
-
-// ---- TENDENCIES ----
 
 function aRenderTendency(gPlays, allPlays) {
   var el = document.getElementById('a-pane-tendency');
-  var gameCount = Object.keys(games).length;
 
-  function tendencyHTML(plays) {
-    var formGroups = aGroupBy(plays, function(p){return p.call.split(' ')[0]||'';});
-    var playGroups = aGroupBy(plays, function(p){
-      var parts = p.call.split(' ');
-      return parts[parts.length-1]||'';
-    });
-    var formRows = aTableRows(formGroups).map(function(r){
+  function formGroups(plays){ return aGroupBy(plays, function(p){ return aGetFormation(p.call); }); }
+  function playGroups(plays){ return aGroupBy(plays, function(p){ return aGetPlay(p.call); }); }
+
+  function summaryCard(plays) {
+    var fg = formGroups(plays);
+    var pg = playGroups(plays);
+    var formRows = aTableRows(fg).map(function(r){
       return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
     }).join('');
-    var hasFormAst = aTableRows(formGroups).some(function(r){return r.skewed;});
-    var playRows = aTableRows(playGroups).map(function(r){
-      var pt = plays.find(function(p){var pts=p.call.split(' ');return pts[pts.length-1]===r.key;})||{};
+    var hasFormAst = aTableRows(fg).some(function(r){return r.skewed;});
+    var playRows = aTableRows(pg).map(function(r){
+      var pt = plays.find(function(p){return aGetPlay(p.call)===r.key;})||{};
       return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
     }).join('');
-    var hasPlayAst = aTableRows(playGroups).some(function(r){return r.skewed;});
+    var hasPlayAst = aTableRows(pg).some(function(r){return r.skewed;});
 
-    // By down summary
     var downSummary = ['1st','2nd','3rd','4th'].map(function(dn){
       var dp = plays.filter(function(p){return p.down===dn;});
       if (!dp.length) return '';
-      var run = dp.filter(function(p){return p.playtype==='Run';});
-      var pass = dp.filter(function(p){return p.playtype==='Pass';});
-      var topPlay = '';
-      var tpg = aGroupBy(dp,function(p){var pts=p.call.split(' ');return pts[pts.length-1]||'';});
+      var run=dp.filter(function(p){return p.playtype==='Run';});
+      var pass=dp.filter(function(p){return p.playtype==='Pass';});
+      var tpg = playGroups(dp);
       var tpr = aTableRows(tpg);
-      if (tpr.length) topPlay = tpr[0].key;
-      return '<tr><td class="l">'+dn+'</td><td>'+dp.length+'</td><td>'+(dp.length?Math.round(run.length/dp.length*100)+'%':'—')+'</td><td>'+(dp.length?Math.round(pass.length/dp.length*100)+'%':'—')+'</td><td>'+aAvg(dp).toFixed(1)+'</td><td class="l">'+topPlay+'</td></tr>';
+      var topPlay = tpr.length ? tpr[0].key : '';
+      return '<tr><td class="l">'+dn+'</td><td>'+dp.length+'</td><td>'+Math.round(run.length/dp.length*100)+'%</td><td>'+Math.round(pass.length/dp.length*100)+'%</td><td>'+aAvg(dp).toFixed(1)+'</td><td class="l">'+topPlay+'</td></tr>';
     }).join('');
 
-    // By down detail
     var downDetail = ['1st','2nd','3rd','4th'].map(function(dn){
       var dp = plays.filter(function(p){return p.down===dn;});
       if (!dp.length) return '';
-      var dfg = aGroupBy(dp,function(p){return p.call.split(' ')[0]||'';});
-      var dpg = aGroupBy(dp,function(p){var pts=p.call.split(' ');return pts[pts.length-1]||'';});
+      var dfg = formGroups(dp);
+      var dpg = playGroups(dp);
       var dfRows = aTableRows(dfg).map(function(r){
         return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
       }).join('');
       var dfHasAst = aTableRows(dfg).some(function(r){return r.skewed;});
       var dpRows = aTableRows(dpg).map(function(r){
-        var pt = dp.find(function(p){var pts=p.call.split(' ');return pts[pts.length-1]===r.key;})||{};
+        var pt = dp.find(function(p){return aGetPlay(p.call)===r.key;})||{};
         return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
       }).join('');
       var dpHasAst = aTableRows(dpg).some(function(r){return r.skewed;});
-      return '<div class="a-db"><div class="a-dh">'+dn+' down \u2014 '+dp.length+' plays</div>'+
+      return '<div class="a-db"><div class="a-dh">'+dn+' down — '+dp.length+' plays</div>'+
         '<div class="a-g2">'+
         '<div><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
         '<div><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
@@ -882,105 +862,102 @@ function aRenderTendency(gPlays, allPlays) {
     }).join('');
 
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="a-ct">Top formations</div><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Plays</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-      '<div class="a-card"><div class="a-ct">Top plays</div><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="a-ct">By down \u2014 summary</div><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div>'+
-      '<div class="a-card"><div class="a-ct">Formations &amp; plays by down</div>'+downDetail+'</div>';
+      '<div class="a-card"><div class="a-ct">Top formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Plays</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="a-ct">Top plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
+      '<div class="a-card"><div class="a-ct">By down — summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
+      '<div class="a-card"><div class="a-ct">Formations &amp; plays by down</div><div style="padding:12px 14px">'+downDetail+'</div></div>';
   }
 
-  // Season 3rd down by distance
-  function thirdDownDist(plays) {
-    var defs = [{label:'3rd & short (1-3)',min:1,max:3},{label:'3rd & medium (4-7)',min:4,max:7},{label:'3rd & long (8+)',min:8,max:99}];
-    return defs.map(function(d){
-      var dp = plays.filter(function(p){return p.down==='3rd'&&p.dist>=d.min&&p.dist<=d.max;});
-      if (!dp.length) return '';
-      var run=dp.filter(function(p){return p.playtype==='Run';});
-      var pass=dp.filter(function(p){return p.playtype==='Pass';});
-      var conv=dp.filter(function(p){return p.result==='1st down'||p.result==='Touchdown';});
-      return '<tr><td class="l">'+d.label+'</td><td>'+dp.length+'</td><td>'+Math.round(run.length/dp.length*100)+'%</td><td>'+Math.round(pass.length/dp.length*100)+'%</td><td>'+aAvg(dp).toFixed(1)+'</td><td>'+Math.round(conv.length/dp.length*100)+'%</td></tr>';
-    }).join('');
-  }
-
-  var gameCount = Object.keys(games).length;
-  el.innerHTML =
-    aSection('This game') + tendencyHTML(gPlays) +
-    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') +
-    '<div class="a-card"><div class="a-ct-season">3rd down tendencies by distance</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l">Situation</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th>Conv rate</th></tr></thead><tbody>'+thirdDownDist(allPlays)+'</tbody></table></div>';
+  el.innerHTML = aSection('This game') + summaryCard(gPlays);
 }
-
-// ---- EFFICIENCY ----
 
 function aRenderEfficiency(gPlays, allPlays) {
   var el = document.getElementById('a-pane-efficiency');
-  var gameCount = Object.keys(games).length;
 
-  function effHTML(plays, label) {
-    var playGroups = aGroupBy(plays, function(p){var pts=p.call.split(' ');return pts[pts.length-1]||'';});
-    var formGroups = aGroupBy(plays, function(p){return p.call.split(' ')[0]||'';});
-    var playRows = aTableRows(playGroups).map(function(r){
+  function playGroups(plays){ return aGroupBy(plays, function(p){ return aGetPlay(p.call); }); }
+  function formGroups(plays){ return aGroupBy(plays, function(p){ return aGetFormation(p.call); }); }
+
+  function effCards(plays, season) {
+    var ct = season ? 'a-ct-season' : 'a-ct';
+    var pg = playGroups(plays);
+    var fg = formGroups(plays);
+    var playRows = aTableRows(pg).map(function(r){
       return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
     }).join('');
-    var hasPlayAst = aTableRows(playGroups).some(function(r){return r.skewed;});
-    var formRows = aTableRows(formGroups).map(function(r){
+    var hasPlayAst = aTableRows(pg).some(function(r){return r.skewed;});
+    var formRows = aTableRows(fg).map(function(r){
       return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
     }).join('');
-    var hasFormAst = aTableRows(formGroups).some(function(r){return r.skewed;});
+    var hasFormAst = aTableRows(fg).some(function(r){return r.skewed;});
     var conv = a3rdConv(plays);
+
+    // Hash breakdown
+    var hashes = ['Left hash','Middle','Right hash'];
+    var hashDetail = hashes.map(function(h) {
+      var hp = plays.filter(function(p){return p.hash===h;});
+      if (!hp.length) return '';
+      var hfg = formGroups(hp);
+      var hpg = playGroups(hp);
+      var hfRows = aTableRows(hfg).map(function(r){
+        return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
+      }).join('');
+      var hfAst = aTableRows(hfg).some(function(r){return r.skewed;});
+      var hpRows = aTableRows(hpg).map(function(r){
+        var pt = hp.find(function(p){return aGetPlay(p.call)===r.key;})||{};
+        return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
+      }).join('');
+      var hpAst = aTableRows(hpg).some(function(r){return r.skewed;});
+      var label = h.replace(' hash','').replace('Middle','Middle');
+      return '<div class="a-db"><div class="a-dh">'+h+' — '+hp.length+' plays</div>'+
+        '<div class="a-g2">'+
+        '<div><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
+        '<div><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
+        '</div></div>';
+    }).join('');
+
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="a-ct">Best plays by avg gain</div><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-      '<div class="a-card"><div class="a-ct">Best formations by avg gain</div><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="a-ct">3rd down conversion rate</div>'+
-      '<div class="a-g3" style="margin-bottom:0">'+aStatCard('Attempts',conv.att)+aStatCard('Conversions',conv.conv)+aStatCard('Conv rate',conv.pct)+'</div></div>';
+      '<div class="a-card"><div class="'+ct+'">Best plays by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Best formations by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">3rd down conversion rate</div><div style="padding:12px 14px"><div class="a-g3" style="margin-bottom:0">'+aStatCard('Attempts',conv.att)+aStatCard('Conversions',conv.conv)+aStatCard('Conv rate',conv.pct)+'</div></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Formations &amp; plays by hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
   }
 
-  el.innerHTML =
-    aSection('This game') + effHTML(gPlays) +
-    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') + effHTML(allPlays);
+  el.innerHTML = aSection('This game') + effCards(gPlays, false);
 }
-
-// ---- DEFENSIVE LOOKS ----
 
 function aRenderDefense(gPlays, allPlays) {
   var el = document.getElementById('a-pane-defense');
   var gameCount = Object.keys(games).length;
 
-  function defHTML(plays) {
-    // Fronts faced summary
-    var frontGroups = aGroupBy(plays, function(p){return p.defFront&&p.defFront!=='\u2014'?p.defFront:'';});
+  function defHTML(plays, season) {
+    var ct = season ? 'a-ct-season' : 'a-ct';
+    var frontGroups = aGroupBy(plays.filter(function(p){return p.defFront&&p.defFront!=='—';}),function(p){return p.defFront;});
     var frontRows = aTableRows(frontGroups).map(function(r){
       var run=r.plays.filter(function(p){return p.playtype==='Run';});
       var pass=r.plays.filter(function(p){return p.playtype==='Pass';});
       return '<tr><td class="l">'+r.key+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td><td>'+(run.length?aAvg(run).toFixed(1):'—')+'</td><td>'+(pass.length?aAvg(pass).toFixed(1):'—')+'</td></tr>';
     }).join('');
 
-    // Coverages faced summary
-    var covGroups = aGroupBy(plays, function(p){return p.coverage&&p.coverage!=='\u2014'?p.coverage:'';});
+    var covGroups = aGroupBy(plays.filter(function(p){return p.coverage&&p.coverage!=='—';}),function(p){return p.coverage;});
     var covRows = aTableRows(covGroups).map(function(r){
       var passPlays=r.plays.filter(function(p){return p.playtype==='Pass';});
-      var comps=passPlays.filter(function(p){return p.result==='Completion';});
+      var comps=passPlays.filter(function(p){return p.result==='Completion'||p.result==='Touchdown';});
       var compPct=passPlays.length?Math.round(comps.length/passPlays.length*100)+'%':'—';
       return '<tr><td class="l">'+r.key+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td><td>'+compPct+'</td></tr>';
     }).join('');
 
-    // Fronts by formation (formation+hole grouped)
-    var formFrontKey = function(p){
-      var parts = p.call.split(' ');
-      var form = parts[0]||'';
-      var hole = parts.length>1?parts[1]:'';
-      return form+(hole?' '+hole:'');
-    };
-    var ffGroups = aGroupBy(plays.filter(function(p){return p.defFront&&p.defFront!=='\u2014';}), formFrontKey);
-    // Sort groups by avg yards of all plays in that formation
+    // Fronts by formation+hole
+    var formFrontKey = function(p){ return aGetFormation(p.call)+(p.call.split(' ')[1]&&!isNaN(p.call.split(' ')[1])?' '+p.call.split(' ')[1]:''); };
+    var ffPlays = plays.filter(function(p){return p.defFront&&p.defFront!=='—';});
+    var ffGroups = aGroupBy(ffPlays, formFrontKey);
     var ffSorted = Object.keys(ffGroups).map(function(k){
       return {key:k, plays:ffGroups[k], avg:aAvg(ffGroups[k])};
     }).sort(function(a,b){return b.avg-a.avg;});
-
     var ffRows = ffSorted.map(function(fg){
       var byFront = aGroupBy(fg.plays, function(p){return p.defFront;});
       var frontDetail = Object.keys(byFront).map(function(f){
-        var fp = byFront[f];
-        return {front:f, plays:fp, avg:aAvg(fp)};
+        var fp=byFront[f];
+        return {front:f,plays:fp,avg:aAvg(fp)};
       }).sort(function(a,b){return b.avg-a.avg;});
       var rows = '<tr class="a-grp"><td colspan="2">'+fg.key+'</td><td></td><td></td></tr>';
       rows += frontDetail.map(function(fd){
@@ -993,46 +970,101 @@ function aRenderDefense(gPlays, allPlays) {
       return Object.keys(byFront).some(function(f){return aSkewed(byFront[f]);});
     });
 
-    // Coverage by play call (pass plays only)
-    var passPlays = plays.filter(function(p){return p.playtype==='Pass'&&p.coverage&&p.coverage!=='\u2014';});
+    // Coverage by play call (pass plays)
+    var passPlays = plays.filter(function(p){return p.playtype==='Pass'&&p.coverage&&p.coverage!=='—';});
     var cpGroups = aGroupBy(passPlays, function(p){return p.call+'|||'+p.coverage;});
     var cpRows = aTableRows(cpGroups).map(function(r){
-      var parts = r.key.split('|||');
+      var parts=r.key.split('|||');
       return '<tr><td class="l">'+parts[0]+aStar(r.plays)+'</td><td class="l">'+parts[1]+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
     }).join('');
     var hasCPAst = aTableRows(cpGroups).some(function(r){return r.skewed;});
 
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="a-ct">Fronts faced</div><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th><th>Run avg</th><th>Pass avg</th></tr></thead><tbody>'+frontRows+'</tbody></table></div>'+
-      '<div class="a-card"><div class="a-ct">Coverages faced</div><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+covRows+'</tbody></table></div></div>'+
-      '<div class="a-card"><div class="a-ct">Fronts by formation \u2014 sorted by avg yards</div>'+
+      '<div class="a-card"><div class="'+ct+'">Fronts faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th><th>Run avg</th><th>Pass avg</th></tr></thead><tbody>'+frontRows+'</tbody></table></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Coverages faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+covRows+'</tbody></table></div></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Fronts by formation</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l" style="width:35%">Formation</th><th class="l" style="width:25%">Front</th><th style="width:18%">Count</th><th style="width:18%">Avg</th></tr></thead><tbody>'+ffRows+'</tbody></table>'+
-      (hasFFAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-      '<div class="a-card"><div class="a-ct">Coverage by play call \u2014 sorted by avg yards</div>'+
+      (hasFFAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Coverage by play call</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l" style="width:42%">Play call</th><th class="l" style="width:22%">Coverage</th><th style="width:16%">Count</th><th style="width:16%">Avg</th></tr></thead><tbody>'+cpRows+'</tbody></table>'+
-      (hasCPAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>';
+      (hasCPAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>';
   }
 
-  // Season: simpler summary tables only
-  var sFrontGroups = aGroupBy(allPlays.filter(function(p){return p.defFront&&p.defFront!=='\u2014';}),function(p){return p.defFront;});
+  var sFrontGroups = aGroupBy(allPlays.filter(function(p){return p.defFront&&p.defFront!=='—';}),function(p){return p.defFront;});
   var sFrontRows = aTableRows(sFrontGroups).map(function(r){
     return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
   }).join('');
-  var sCovGroups = aGroupBy(allPlays.filter(function(p){return p.coverage&&p.coverage!=='\u2014'&&p.playtype==='Pass';}),function(p){return p.coverage;});
+  var sCovGroups = aGroupBy(allPlays.filter(function(p){return p.coverage&&p.coverage!=='—'&&p.playtype==='Pass';}),function(p){return p.coverage;});
   var sCovRows = aTableRows(sCovGroups).map(function(r){
-    var comps=r.plays.filter(function(p){return p.result==='Completion';});
+    var comps=r.plays.filter(function(p){return p.result==='Completion'||p.result==='Touchdown';});
     var compPct=r.plays.length?Math.round(comps.length/r.plays.length*100)+'%':'—';
     return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td><td>'+compPct+'</td></tr>';
   }).join('');
 
   el.innerHTML =
-    aSection('This game') + defHTML(gPlays) +
-    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')') +
+    aSection('This game') + defHTML(gPlays, false) +
+    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g2">'+
-    '<div class="a-card"><div class="a-ct-season">Season vs fronts</div><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div>'+
-    '<div class="a-card"><div class="a-ct-season">Season vs coverages</div><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div>';
+    '<div class="a-card"><div class="a-ct-season">Season vs fronts</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div></div>'+
+    '<div class="a-card"><div class="a-ct-season">Season vs coverages</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div></div>';
 }
 
+// ---- RED ZONE ----
+function aRenderRedzone(gPlays, allPlays) {
+  var el = document.getElementById('a-pane-redzone');
+  var gameCount = Object.keys(games).length;
+
+  function rzPlays(plays){ return plays.filter(function(p){return aIsRedZone(p);}); }
+
+  function rzTopCards(plays, season) {
+    var ct = season ? 'a-ct-season' : 'a-ct';
+    var pg = aGroupBy(plays, function(p){return aGetPlay(p.call);});
+    var fg = aGroupBy(plays, function(p){return aGetFormation(p.call);});
+    var playRows = aTableRows(pg).map(function(r){
+      return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
+    }).join('');
+    var hasPlayAst = aTableRows(pg).some(function(r){return r.skewed;});
+    var formRows = aTableRows(fg).map(function(r){
+      return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
+    }).join('');
+    var hasFormAst = aTableRows(fg).some(function(r){return r.skewed;});
+    return '<div class="a-g2">'+
+      '<div class="a-card"><div class="'+ct+'">Best plays by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Best formations by avg gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
+  }
+
+  function rzPlayLog(plays, tdsOnly, season) {
+    var ct = season ? 'a-ct-season' : 'a-ct';
+    var filtered = tdsOnly ? plays.filter(function(p){return p.result==='Touchdown';}) : plays;
+    var title = tdsOnly ? 'Touchdowns' : 'All red zone plays';
+    if (!filtered.length) return '<div class="a-card"><div class="'+ct+'">'+title+'</div><div style="padding:12px 14px"><div class="a-fn">No plays to show.</div></div></div>';
+    var rows = filtered.map(function(p){
+      var yc = p.yards>0?'a-yp':p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
+      var ys = p.yards>0?'+'+p.yards:String(p.yards);
+      return '<tr>'+
+        '<td class="l" style="width:54px">'+p.down+' &amp; '+p.dist+'</td>'+
+        '<td class="l" style="width:44px">'+p.hash.replace(' hash','')+'</td>'+
+        '<td class="l">'+p.call+'</td>'+
+        '<td class="l" style="width:46px"><span class="'+(p.playtype==='Run'?'a-bpr':'a-bpp')+'">'+p.playtype+'</span></td>'+
+        '<td class="l" style="width:38px">'+(p.defFront||'—')+'</td>'+
+        '<td class="l" style="width:54px">'+(p.coverage||'—')+'</td>'+
+        '<td class="'+yc+'" style="width:36px">'+ys+'</td>'+
+        '<td class="l" style="width:80px">'+p.result+'</td>'+
+        '</tr>';
+    }).join('');
+    return '<div class="a-card"><div class="'+ct+'">'+title+'</div><div style="padding:12px 14px">'+
+      '<table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Hash</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }
+
+  var gRZ = rzPlays(gPlays);
+  var sRZ = rzPlays(allPlays);
+
+  el.innerHTML =
+    aSection('This game') +
+    (gRZ.length ? rzTopCards(gRZ,false)+rzPlayLog(gRZ,false,false)+rzPlayLog(gRZ,true,false) : '<div class="a-fn" style="padding:8px 0">No red zone plays this game.</div>') +
+    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
+    (sRZ.length ? rzTopCards(sRZ,true)+rzPlayLog(sRZ,false,true)+rzPlayLog(sRZ,true,true) : '<div class="a-fn" style="padding:8px 0">No red zone plays this season.</div>');
+}
 
 </script>
 </body>
