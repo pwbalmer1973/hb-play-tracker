@@ -69,6 +69,7 @@ button{cursor:pointer;font-family:inherit}
 .pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
 .pr{background:#d1f5e0;color:#1a7a3c}
 .pp{background:#ddeeff;color:#0055cc}
+.pt{background:#ffe0e0;color:#cc0000}
 .gi{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e5e5ea;border-radius:10px;margin-bottom:8px}
 .gi.ag{border-color:#1a3a8c;background:#f0f4ff}
 .gn{font-weight:600;font-size:13px}
@@ -114,6 +115,7 @@ button{cursor:pointer;font-family:inherit}
 .a-grp td{background:#f5f5f7;font-size:11px;font-weight:600;color:#1d1d1f;padding:5px 6px;border-bottom:.5px solid #e5e5ea;text-align:left}
 .a-bpr{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:600;background:#d1f5e0;color:#1a7a3c}
 .a-bpp{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:600;background:#ddeeff;color:#0055cc}
+.a-bpt{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:600;background:#ffe0e0;color:#cc0000}
 .a-yp{color:#34c759;font-weight:600}
 .a-ast{color:#cc7700}
 .a-fn{font-size:10px;color:#6e6e73;margin-top:6px;font-style:italic}
@@ -126,6 +128,21 @@ button{cursor:pointer;font-family:inherit}
 .edit-banner-cancel{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit}
 .log-table tr.clickable{cursor:pointer}
 .log-table tr.clickable:hover td{background:#e8f0ff}
+
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:20px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+.modal-title{font-size:15px;font-weight:700;color:#1d1d1f;margin-bottom:14px}
+.modal-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.modal-label{font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.06em}
+.modal-btns{display:flex;gap:8px;margin-top:16px}
+
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d2d2d7;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:200;max-height:160px;overflow-y:auto;display:none}
+.autocomplete-list.show{display:block}
+.autocomplete-item{padding:8px 10px;font-size:13px;cursor:pointer;color:#1d1d1f}
+.autocomplete-item:hover{background:#f0f4ff}
+.autocomplete-item strong{color:#1a3a8c}
 </style>
 </head>
 <body>
@@ -147,8 +164,9 @@ button{cursor:pointer;font-family:inherit}
   <div class="gbanner">
     <div><div class="gbl">Current game</div><div class="gbn" id="gname">No game selected</div></div>
     <div style="display:flex;gap:6px">
-      <button class="bs bsm" id="game-over-btn" onclick="gameOver()" style="display:none;background:#fff0f0;border-color:#ff3b30;color:#ff3b30">Game Over</button>
+      <button class="bs bsm" onclick="openGameModal()">New game</button>
       <button class="bs bsm" onclick="showTab('games')">Switch game</button>
+      <button class="bs bsm" id="game-over-btn" onclick="gameOver()" style="display:none;background:#fff0f0;border-color:#ff3b30;color:#ff3b30">Game Over</button>
     </div>
   </div>
   <div class="score-row">
@@ -252,10 +270,18 @@ button{cursor:pointer;font-family:inherit}
           <option value="Turnover on downs">Turnover on downs</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">QB</label><input type="text" id="qb" placeholder="Name or #"></div>
+      <div class="fg"><label class="fl">QB</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="qb" placeholder="Name or #" oninput="onQBInput()" onblur="hideAutocomplete('qb-list')" autocomplete="off">
+          <div class="autocomplete-list" id="qb-list"></div>
+        </div></div>
     </div>
     <div class="r4">
-      <div class="fg"><label class="fl">Ball carrier / target</label><input type="text" id="plyr" placeholder="Name or #"></div>
+      <div class="fg"><label class="fl">Ball carrier / target</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="plyr" placeholder="Name or #" oninput="onPlayerInput()" onblur="hideAutocomplete('plyr-list')" autocomplete="off">
+          <div class="autocomplete-list" id="plyr-list"></div>
+        </div></div>
       <div class="fg"><label class="fl">Def front</label><select id="dfront"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
       <div class="fg"><label class="fl">Coverage</label><select id="cov"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
       <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
@@ -316,14 +342,83 @@ button{cursor:pointer;font-family:inherit}
 </div>
 
 
+
+<div class="modal-overlay" id="new-game-modal" onclick="if(event.target===this)closeGameModal()">
+  <div class="modal-box">
+    <div class="modal-title">New Game</div>
+    <div class="modal-row">
+      <label class="modal-label">Opponent</label>
+      <input type="text" id="modal-opp" placeholder="e.g. Concord High">
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Date</label>
+      <input type="date" id="modal-date">
+    </div>
+    <div class="modal-btns">
+      <button class="bp" onclick="createGameFromModal()" style="flex:1">Create game</button>
+      <button class="bs" onclick="closeGameModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 var PTM={'Alaska':'Run','American':'Run','Badger':'Run','Bear':'Run','Blood':'Run','Booger':'Run','Goat':'Run','Gorilla':'Run','Hogs':'Run','Jet':'Run','Bell':'Pass','Bell Switch':'Pass','Bow':'Pass','Chop':'Pass','Depot':'Pass','Fist':'Pass','Fist Rip':'Pass','Hurricane':'Pass','Levels':'Pass','Python':'Pass','RCA':'Pass','Smash':'Pass','Spears':'Pass','Sticks':'Pass','Y Low':'Pass','Fred':'Pass','Gator':'Pass','Hail':'Pass','Rain':'Pass','Seminole':'Pass','Stan':'Pass','Tony':'Pass','Train':'Pass','Same':'Toss'};
 var FTM={'Money 1':'Pass','Money 2':'Run','Money 3':'Pass','Money 4':'Pass','Money 5':'Run','Money 6':'Pass'};
-var TC={Run:'pr',Pass:'pp'};
+var TC={Run:'pr',Pass:'pp',Toss:'pt'};
 var DOWNS=['1st','2nd','3rd','4th'];
 var PC=['Touchdown','Fumble','Fumble recovered','Interception','Turnover on downs','Safety'];
 var NA=['Incomplete'];
+var ROSTER=[
+  {num:'15',name:'Stevie Neibel',pos:'QB'},
+  {num:'25',name:'Nate Fauteux',pos:'QB'},
+  {num:'2',name:'Thurston Balmer',pos:'WR'},
+  {num:'23',name:'Cole Duncan',pos:'WR'},
+  {num:'20',name:'Braylon Cudworth',pos:'WR'},
+  {num:'4',name:'Ben York',pos:'RB'},
+  {num:'35',name:'Matthew Souza',pos:'RB'}
+];
+var QB_ROSTER=ROSTER.filter(function(p){return p.pos==='QB';});
+
+function rosterMatch(query,list){
+  if(!query) return [];
+  var q=query.toLowerCase().replace('#','');
+  return list.filter(function(p){
+    return p.num.indexOf(q)===0||p.name.toLowerCase().indexOf(q)>=0||p.name.split(' ')[1].toLowerCase().indexOf(q)===0;
+  });
+}
+
+function showAutocomplete(inputId,listId,matches){
+  var list=document.getElementById(listId);
+  if(!matches.length){list.classList.remove('show');return;}
+  list.innerHTML=matches.map(function(p){
+    var val='#'+p.num+' '+p.name;
+    return '<div class="autocomplete-item" onmousedown="pickPlayer(this)" data-input="'+inputId+'" data-list="'+listId+'" data-val="'+val+'"><strong>#'+p.num+'</strong> '+p.name+' <span style="color:#6e6e73;font-size:11px">'+p.pos+'</span></div>';
+  }).join('');
+  list.classList.add('show');
+}
+
+function pickPlayer(el){
+  var inputId=el.getAttribute('data-input');
+  var listId=el.getAttribute('data-list');
+  var val=el.getAttribute('data-val');
+  document.getElementById(inputId).value=val;
+  document.getElementById(listId).classList.remove('show');
+}
+
+function hideAutocomplete(listId){
+  setTimeout(function(){document.getElementById(listId).classList.remove('show');},200);
+}
+
+function onQBInput(){
+  var q=document.getElementById('qb').value;
+  showAutocomplete('qb','qb-list',rosterMatch(q,QB_ROSTER));
+}
+
+function onPlayerInput(){
+  var q=document.getElementById('plyr').value;
+  showAutocomplete('plyr','plyr-list',rosterMatch(q,ROSTER));
+}
 var games={},gid=null,Q=1,lastQB='',editId=null;
 
 if('serviceWorker' in navigator){
@@ -606,6 +701,25 @@ function cancelEdit(){
   document.getElementById('yline').value='';
 }
 
+
+function openGameModal(){
+  document.getElementById('modal-opp').value='';
+  document.getElementById('modal-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('new-game-modal').classList.add('show');
+  setTimeout(function(){ document.getElementById('modal-opp').focus(); }, 100);
+}
+function closeGameModal(){
+  document.getElementById('new-game-modal').classList.remove('show');
+}
+function createGameFromModal(){
+  var opp=document.getElementById('modal-opp').value.trim();
+  var dt=document.getElementById('modal-date').value;
+  if(!opp){ document.getElementById('modal-opp').focus(); return; }
+  var id='g'+Date.now();
+  games[id]={id:id,opponent:opp,date:dt,plays:[],scoreUs:0,scoreThem:0};
+  save(); setGame(id); closeGameModal();
+  toast('Game vs '+opp+' started!');
+}
 function logPlay(){
   if(!gid){alert('Please create or select a game first.');showTab('games');return;}
   var yr=document.getElementById('yds').value;
@@ -667,7 +781,7 @@ function renderLog(){
   var rows=[].concat(ps).reverse().map(function(p){
     var yc=p.yards>0?'yp':p.yards<0?'yn':'yz';
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
-    var tc=TC[p.playtype==='Toss'?'Pass':p.playtype]||'';
+    var tc=TC[p.playtype]||'';
     var ni=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';
     return '<tr class="clickable" onclick="editPlay('+p.id+')">'+
       '<td style="width:70px">'+p.down+' &amp; '+p.dist+'</td>'+
@@ -820,9 +934,10 @@ function aSkewed(plays) {
 
 function aStar(plays) { return aSkewed(plays) ? '<span class="a-ast">*</span>' : ''; }
 
-function aTypePill(pt) {
-  if (pt==='Run') return '<span class="a-bpr">Run</span>';
-  if (pt==='Pass') return '<span class="a-bpp">Pass</span>';
+function aTypePill(pt){
+  if(pt==='Run') return '<span class="a-bpr">Run</span>';
+  if(pt==='Pass') return '<span class="a-bpp">Pass</span>';
+  if(pt==='Toss') return '<span class="a-bpt">Toss</span>';
   return '';
 }
 
