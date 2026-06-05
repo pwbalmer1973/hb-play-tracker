@@ -1089,15 +1089,25 @@ function aPlayerRows(plays) {
       else if (p.result==='1st down') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].rec1D++; }
     }
   });
-  function getRosterInfo(name) {
-    if (!name) return {num:'',pos:''};
-    var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===name || p.name===name; });
-    return r ? {num:r.num, pos:r.pos} : {num:'', pos:''};
+  function getRosterInfo(raw) {
+    if (!raw) return {num:'',name:raw||'',pos:''};
+    // Try exact match on "num name" format
+    var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===raw; });
+    if (r) return {num:r.num, name:r.name, pos:r.pos};
+    // Try name only
+    r = ROSTER.find(function(p){ return p.name===raw; });
+    if (r) return {num:r.num, name:r.name, pos:r.pos};
+    // Try num only at start (e.g. "15 Unknown")
+    var parts = raw.split(' ');
+    if (parts.length>1 && !isNaN(parts[0])) {
+      return {num:parts[0], name:parts.slice(1).join(' '), pos:''};
+    }
+    return {num:'', name:raw, pos:''};
   }
   return Object.keys(pm).map(function(k){
     var s = pm[k];
     var ri = getRosterInfo(k);
-    return {name:k, s:s, total:s.rushYds+s.recYds, num:ri.num, pos:ri.pos};
+    return {name:ri.name, s:s, total:s.rushYds+s.recYds, num:ri.num, pos:ri.pos};
   }).filter(function(r){ return r.total>0||r.s.tgts>0||r.s.rushAtt>0; })
     .sort(function(a,b){ return b.total-a.total; })
     .map(function(r){
@@ -1131,7 +1141,11 @@ function aQBRow(plays) {
     var s = qm[qb];
     var compPct = s.att ? Math.round(s.comp/s.att*100)+'%' : '—';
     var d = function(v){ return v?v:'—'; };
-    return '<tr><td class="l">'+qb+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
+    // Look up roster
+    var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===qb || p.name===qb; });
+    var num = r ? r.num : (!isNaN(qb.split(' ')[0]) ? qb.split(' ')[0] : '—');
+    var dispName = r ? r.name : (qb.split(' ').length>1 && !isNaN(qb.split(' ')[0]) ? qb.split(' ').slice(1).join(' ') : qb);
+    return '<tr><td class="l">'+num+'</td><td class="l">'+dispName+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
       '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td><td>'+d(s.pass1D)+'</td>'+
       '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
       '<td>'+d(s.sacks)+'</td><td>'+d(s.sackYds)+'</td></tr>';
@@ -1184,18 +1198,18 @@ function aRenderSummary(gPlays, allPlays, g) {
     aRpBar(rp,false)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
     '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Rush 1D</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th><th>Rec 1D</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1D</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1D</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct">QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:10%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Pass 1D</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1D</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Rush 1D</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th><th>Rec 1D</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1D</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1D</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:10%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Pass 1D</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1D</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
 }
 
 function aRenderTendency(gPlays, allPlays) {
@@ -1295,12 +1309,26 @@ function aRenderEfficiency(gPlays, allPlays) {
         return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
       }).join('');
       var hpAst = aTableRows(hpg).some(function(r){return r.skewed;});
-      var label = h.replace(' hash','').replace('Middle','Middle');
+      // Top 5 plays by yards for this hash
+      var callGroups = aGroupBy(hp, function(p){return p.call;});
+      var top5 = [].concat(hp).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
+      var top5rows = top5.map(function(p){
+        var cg = callGroups[p.call]||[p];
+        var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
+        var front = p.defFront||'—';
+        var cov = p.coverage||'—';
+        var yc = p.yards>0?'a-yp':'';
+        var ys = p.yards>0?'+'+p.yards:String(p.yards);
+        return '<tr><td class="l">'+p.call+' '+star+'</td><td class="l">'+front+'</td><td class="l">'+cov+'</td><td class="'+yc+'">'+ys+'</td><td class="l">'+p.result+'</td></tr>';
+      }).join('');
+      var hasTop5Ast = top5.some(function(p){return aSkewed(callGroups[p.call]||[p]);});
       return '<div class="a-db"><div class="a-dh">'+h+' — '+hp.length+' plays</div>'+
         '<div class="a-g2">'+
         '<div><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
         '<div><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Uses</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-        '</div></div>';
+        '</div>'+
+        '<div style="margin-top:10px"><table class="a-tbl"><thead><tr><th class="l">Call</th><th class="l">Front</th><th class="l">Coverage</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+top5rows+'</tbody></table>'+(hasTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
+        '</div>';
     }).join('');
 
     return '<div class="a-g2">'+
