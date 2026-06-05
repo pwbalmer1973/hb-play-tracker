@@ -62,7 +62,7 @@ button{cursor:pointer;font-family:inherit}
 .lt td{padding:6px 5px;border-bottom:.5px solid #f5f5f7;color:#1d1d1f;vertical-align:middle;white-space:nowrap}
 .lt tr:last-child td{border-bottom:none}
 .lt tr:hover td{background:#f0f4ff}
-.yp{color:#34c759!important;font-weight:600}
+.yp{}
 .yn{color:#ff3b30!important;font-weight:600}
 .yz{color:#6e6e73}
 .es{text-align:center;color:#aeaeb2;padding:2rem;font-size:13px}
@@ -802,7 +802,7 @@ function renderLog(){
   var el=document.getElementById('logcon'),ps=plays();
   if(!ps.length){el.innerHTML='<div class="es">No plays logged yet.</div>';return;}
   var rows=[].concat(ps).reverse().map(function(p){
-    var yc=(p.yards<0||p.result==='Loss')?'yn':p.yards>0?'yp':'yz';
+    var yc=(p.yards<0||p.result==='Loss')?'yn':'';
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
     var tc=TC[p.playtype]||'';var rp=(p.result==='O Penalty'||p.result==='D Penalty')?'py':'';
     var ni=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';
@@ -810,16 +810,16 @@ function renderLog(){
       '<td>'+p.down+' &amp; '+p.dist+'</td>'+
       '<td>'+p.hash.replace(' hash','')+'</td>'+
       '<td>'+p.yardline+'</td>'+
-      '<td style="white-space:nowrap">'+p.call+ni+'</td>'+
+      '<td>'+p.call+ni+'</td>'+
       '<td style="width:46px"><span class="pill '+tc+'">'+p.playtype+'</span></td>'+
-      '<td class="'+yc+'" style="width:38px">'+ys+'</td>'+
       '<td>'+p.defFront+'</td>'+
       '<td>'+p.coverage+'</td>'+
-      '<td'+(p.result==='Loss'?' class="yn"':'')+'>'+p.result+'</td>'+
+      '<td class="'+yc+'" style="width:38px">'+ys+'</td>'+
+      '<td'+(p.result==='Loss'?' class="yn"':'')+'>' +p.result+'</td>'+
       '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
   }).join('');
-  el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Hash</th><th>Yard</th><th>Call</th><th>Type</th><th>Yds</th><th>Front</th><th>Cov</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Hash</th><th>Yard</th><th>Call</th><th>Type</th><th>Front</th><th>Cov</th><th>Yds</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function newGame(){
@@ -1272,8 +1272,8 @@ function aRenderTendency(gPlays, allPlays) {
       var dpHasAst = aTableRows(dpg).some(function(r){return r.skewed;});
       return '<div class="a-db"><div class="a-dh">'+dn+' down — '+dp.length+' plays</div>'+
         '<div class="a-g2">'+
-        '<div><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
-        '<div><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
+        '<div class="a-card"><div class="a-ct">Formations By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct">Plays By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div></div>';
     }).join('');
 
