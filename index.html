@@ -121,10 +121,11 @@ button{cursor:pointer;font-family:inherit}
 .a-db{margin-bottom:14px}
 .a-db:last-child{margin-bottom:0}
 
-.chat-msg-user{background:#1a3a8c;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;align-self:flex-end;max-width:80%}
-.chat-msg-ai{background:#fff;border:.5px solid #e5e5ea;border-radius:10px;padding:10px 14px;font-size:13px;color:#1d1d1f;max-width:90%;line-height:1.5}
-.chat-msg-error{background:#fff3cd;border-radius:10px;padding:10px 14px;font-size:13px;color:#856404}
-.chat-thinking{background:#f5f5f7;border-radius:10px;padding:10px 14px;font-size:13px;color:#6e6e73;font-style:italic}
+.edit-banner{background:#1a3a8c;color:#fff;border-radius:8px;padding:8px 14px;margin-bottom:10px;display:none;align-items:center;justify-content:space-between}
+.edit-banner-text{font-size:13px;font-weight:500}
+.edit-banner-cancel{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+.log-table tr.clickable{cursor:pointer}
+.log-table tr.clickable:hover td{background:#e8f0ff}
 </style>
 </head>
 <body>
@@ -139,14 +140,16 @@ button{cursor:pointer;font-family:inherit}
     <button class="tab active" onclick="showTab('log')">Play Tracker</button>
     <button class="tab" onclick="showTab('analytics')">Analytics</button>
     <button class="tab" onclick="showTab('games')">Games</button>
-    <button class="tab" onclick="showTab('chat')">Sauce</button>
   </div>
 </div>
 
 <div id="pane-log" class="pane active">
   <div class="gbanner">
     <div><div class="gbl">Current game</div><div class="gbn" id="gname">No game selected</div></div>
-    <button class="bs bsm" onclick="showTab('games')">Switch game</button>
+    <div style="display:flex;gap:6px">
+      <button class="bs bsm" id="game-over-btn" onclick="gameOver()" style="display:none;background:#fff0f0;border-color:#ff3b30;color:#ff3b30">Game Over</button>
+      <button class="bs bsm" onclick="showTab('games')">Switch game</button>
+    </div>
   </div>
   <div class="score-row">
     <div class="score-box"><div class="slhb">HB</div><input class="si" type="number" id="sus" value="0" min="0" onchange="saveScore()"></div>
@@ -160,8 +163,12 @@ button{cursor:pointer;font-family:inherit}
     <div class="sc"><div class="sl">Avg gain</div><div class="sv" id="sav">&#8212;</div></div>
     <div class="sc"><div class="sl">Quarter</div><div class="sv" id="sqtr">Q1</div></div>
   </div>
-  <div class="card">
-    <div class="ct">Log a play</div>
+  <div class="edit-banner" id="edit-banner">
+    <div class="edit-banner-text" id="edit-banner-text">Editing play</div>
+    <button class="edit-banner-cancel" onclick="cancelEdit()">&#10005; Cancel</button>
+  </div>
+  <div class="card" id="log-card">
+    <div class="ct" id="log-card-title">Log a play</div>
     <div class="qtabs">
       <button class="qt active" onclick="setQ(1,this)">Q1</button>
       <button class="qt" onclick="setQ(2,this)">Q2</button>
@@ -251,7 +258,7 @@ button{cursor:pointer;font-family:inherit}
       <div class="fg"><label class="fl">Ball carrier / target</label><input type="text" id="plyr" placeholder="Name or #"></div>
       <div class="fg"><label class="fl">Def front</label><select id="dfront"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
       <div class="fg"><label class="fl">Coverage</label><select id="cov"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
-      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%">+ Log play</button></div>
+      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label class="fl">Notes</label><textarea id="notes" placeholder="Free form notes..."></textarea></div>
     <div class="brow"><button class="bs" onclick="doExport()">&#8595; Export</button></div>
@@ -309,23 +316,6 @@ button{cursor:pointer;font-family:inherit}
 </div>
 
 
-<div id="pane-chat" class="pane">
-  <div style="display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:400px">
-    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:10px">
-      <div style="background:#f0f4ff;border-radius:10px;padding:12px 14px;font-size:13px;color:#1a3a8c;border-left:3px solid #1a3a8c">
-        Hi! I have access to all your game data. Ask me anything about your plays, tendencies, or statistics.
-      </div>
-    </div>
-    <div id="chat-offline" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;font-size:12px;color:#856404;margin-bottom:8px">
-      &#9888; Chat requires an internet connection.
-    </div>
-    <div id="chat-input-row" style="display:flex;gap:8px;padding-top:10px;border-top:1px solid #f0f0f5">
-      <textarea id="chat-input" placeholder="Ask anything about your plays..." style="flex:1;resize:none;height:60px;padding:8px 10px;border-radius:8px;border:1px solid #d2d2d7;font-size:13px;font-family:inherit;outline:none" onkeydown="chatKeydown(event)"></textarea>
-      <button onclick="sendChat()" class="bp" style="align-self:flex-end;padding:9px 16px;white-space:nowrap" id="chat-send">Send</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 <script>
 var PTM={'Alaska':'Run','American':'Run','Badger':'Run','Bear':'Run','Blood':'Run','Booger':'Run','Goat':'Run','Gorilla':'Run','Hogs':'Run','Jet':'Run','Bell':'Pass','Bell Switch':'Pass','Bow':'Pass','Chop':'Pass','Depot':'Pass','Fist':'Pass','Fist Rip':'Pass','Hurricane':'Pass','Levels':'Pass','Python':'Pass','RCA':'Pass','Smash':'Pass','Spears':'Pass','Sticks':'Pass','Y Low':'Pass','Fred':'Pass','Gator':'Pass','Hail':'Pass','Rain':'Pass','Seminole':'Pass','Stan':'Pass','Tony':'Pass','Train':'Pass','Same':'Toss'};
@@ -334,7 +324,7 @@ var TC={Run:'pr',Pass:'pp'};
 var DOWNS=['1st','2nd','3rd','4th'];
 var PC=['Touchdown','Fumble','Fumble recovered','Interception','Turnover on downs','Safety'];
 var NA=['Incomplete'];
-var games={},gid=null,Q=1,lastQB='';
+var games={},gid=null,Q=1,lastQB='',editId=null;
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){navigator.serviceWorker.register('/hb-play-tracker/sw.js').catch(function(){});});
@@ -352,15 +342,10 @@ function showTab(t){
   document.querySelectorAll('.tab').forEach(function(e){e.classList.remove('active');});
   document.querySelectorAll('.pane').forEach(function(e){e.classList.remove('active');});
   document.getElementById('pane-'+t).classList.add('active');
-  var tabIdx = t==='log'?0:t==='analytics'?1:t==='games'?2:3;
+  var tabIdx = t==='log'?0:t==='analytics'?1:2;
   document.querySelectorAll('.tab')[tabIdx].classList.add('active');
   if(t==='games')drawGames();
   if(t==='analytics')aInit();
-  if(t==='chat'){
-    var offline = !navigator.onLine;
-    document.getElementById('chat-offline').style.display = offline?'block':'none';
-    document.getElementById('chat-input-row').style.display = offline?'none':'flex';
-  }
 }
 
 // Auto-fill yards when Touchdown is selected
@@ -457,10 +442,28 @@ function updateStats(){
 }
 function updateBanner(){
   var el=document.getElementById('gname');
+  var btn=document.getElementById('game-over-btn');
   if(gid&&games[gid]){
     var g=games[gid],dt=g.date?new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-    el.textContent=g.opponent+(dt?' \u2014 '+dt:'');
-  }else{el.textContent='No game selected';}
+    el.textContent=g.opponent+(dt?' — '+dt:'');
+    if(btn) btn.style.display='block';
+  }else{
+    el.textContent='No game selected';
+    if(btn) btn.style.display='none';
+  }
+}
+
+function gameOver(){
+  if(!gid) return;
+  var g=games[gid];
+  if(!confirm('End game vs '+g.opponent+'? This will deselect the active game.')) return;
+  gid=null;
+  localStorage.removeItem('hba');
+  updateBanner();
+  loadScore();
+  updateStats();
+  renderLog();
+  toast('Game over — ready for next game');
 }
 
 function setQ(q,el){
@@ -486,6 +489,122 @@ function setDn(d){var s=document.getElementById('dn');for(var i=0;i<s.options.le
 function setDs(d){document.getElementById('dst').value=d;}
 function setYL(side,yl){document.getElementById('yside').value=side;document.getElementById('yline').value=yl;}
 function fl(id){var e=document.getElementById(id);if(!e)return;e.classList.remove('au');void e.offsetWidth;e.classList.add('au');setTimeout(function(){e.classList.remove('au');},500);}
+
+
+function editPlay(id){
+  if(!gid) return;
+  var ps=plays();
+  var p=ps.find(function(x){return x.id===id;});
+  if(!p) return;
+  editId=id;
+
+  // Populate form fields
+  setDn(p.down);
+  document.getElementById('dst').value=p.dist;
+  // Hash
+  var hsh=document.getElementById('hsh');
+  for(var i=0;i<hsh.options.length;i++){if(hsh.options[i].value===p.hash||hsh.options[i].text===p.hash){hsh.selectedIndex=i;break;}}
+  // Yardline
+  var side=p.yardline.indexOf('HB ')===0?'ours':'theirs';
+  var yl=parseInt(p.yardline.replace('HB ','').replace('OP ',''),10)||25;
+  document.getElementById('yside').value=side;
+  document.getElementById('yline').value=yl;
+
+  // Parse call: form, mot, hole, play
+  var parts=p.call.split(' ');
+  var MONEY=['Money 1','Money 2','Money 3','Money 4','Money 5','Money 6'];
+  var MOTIONS=['mo','Z mo','A mo','orb'];
+  var form='',mot='',hole='',play='';
+
+  // Check if Money (2-word formation)
+  if(parts.length>=2 && MONEY.indexOf(parts[0]+' '+parts[1])>=0){
+    form=parts[0]+' '+parts[1];
+    parts=parts.slice(2);
+  } else {
+    form=parts[0]||'';
+    parts=parts.slice(1);
+  }
+
+  // Remaining: could be mot, hole, play in any combo
+  // Motion check (could be 2 words like "Z mo")
+  for(var mi=0;mi<MOTIONS.length;mi++){
+    var mlen=MOTIONS[mi].split(' ').length;
+    if(mlen===2 && parts.length>=2 && parts[0]+' '+parts[1]===MOTIONS[mi]){
+      mot=MOTIONS[mi]; parts=parts.slice(2); break;
+    } else if(mlen===1 && parts[0]===MOTIONS[mi]){
+      mot=MOTIONS[mi]; parts=parts.slice(1); break;
+    }
+  }
+  // Hole is numeric
+  if(parts.length>=2 && !isNaN(parts[0])){
+    hole=parts[0]; parts=parts.slice(1);
+  }
+  // Play is whatever's left
+  play=parts.join(' ');
+
+  // Set formation
+  var formSel=document.getElementById('form');
+  for(var fi=0;fi<formSel.options.length;fi++){if(formSel.options[fi].value===form||formSel.options[fi].text===form){formSel.selectedIndex=fi;break;}}
+  // Set motion
+  var motSel=document.getElementById('mot');
+  for(var moi=0;moi<motSel.options.length;moi++){if(motSel.options[moi].value===mot||motSel.options[moi].text===mot){motSel.selectedIndex=moi;break;}}
+  // Set hole
+  var holeSel=document.getElementById('hole');
+  for(var hi=0;hi<holeSel.options.length;hi++){if(holeSel.options[hi].value===hole||holeSel.options[hi].text===hole){holeSel.selectedIndex=hi;break;}}
+  // Set play
+  var playSel=document.getElementById('play');
+  for(var pi=0;pi<playSel.options.length;pi++){if(playSel.options[pi].value===play||playSel.options[pi].text===play){playSel.selectedIndex=pi;break;}}
+
+  // Set play type
+  setPT(p.playtype);
+  // Set yards
+  document.getElementById('yds').value=p.yards;
+  // Set result
+  var resSel=document.getElementById('res');
+  for(var ri=0;ri<resSel.options.length;ri++){if(resSel.options[ri].value===p.result){resSel.selectedIndex=ri;break;}}
+  // Set QB
+  document.getElementById('qb').value=p.qb||'';
+  // Set player
+  document.getElementById('plyr').value=p.player||'';
+  // Set def front
+  var dfSel=document.getElementById('dfront');
+  for(var di=0;di<dfSel.options.length;di++){if(dfSel.options[di].value===p.defFront){dfSel.selectedIndex=di;break;}}
+  // Set coverage
+  var covSel=document.getElementById('cov');
+  for(var ci=0;ci<covSel.options.length;ci++){if(covSel.options[ci].value===p.coverage){covSel.selectedIndex=ci;break;}}
+  // Set notes
+  document.getElementById('notes').value=p.notes||'';
+
+  // Set quarter
+  var qBtns=document.querySelectorAll('.qt');
+  qBtns.forEach(function(btn){btn.classList.remove('active');});
+  qBtns.forEach(function(btn){
+    var qval=btn.textContent.replace('Q','');
+    if(qval===String(p.quarter)||(p.quarter==='OT'&&qval==='OT')){
+      btn.classList.add('active');
+      Q=p.quarter;
+    }
+  });
+
+  // Show edit banner
+  document.getElementById('edit-banner').style.display='flex';
+  document.getElementById('edit-banner-text').textContent='Editing Play #'+p.num+' — '+p.call;
+  document.getElementById('log-play-btn').textContent='Update play';
+
+  // Scroll to form
+  document.getElementById('log-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEdit(){
+  editId=null;
+  document.getElementById('edit-banner').style.display='none';
+  document.getElementById('log-play-btn').textContent='+ Log play';
+  // Clear fields
+  ['yds','plyr','notes','qb'].forEach(function(id){document.getElementById(id).value='';});
+  ['res','form','hole','mot','play','ptype','dfront','cov'].forEach(function(id){document.getElementById(id).selectedIndex=0;});
+  setDn('1st'); setDs(10);
+  document.getElementById('yline').value='';
+}
 
 function logPlay(){
   if(!gid){alert('Please create or select a game first.');showTab('games');return;}
@@ -513,8 +632,21 @@ function logPlay(){
     coverage:document.getElementById('cov').value||'\u2014',
     notes:document.getElementById('notes').value.trim()||''
   };
-  games[gid].plays.push(p);
-  scoreResult(res);
+  if(editId){
+    // Update existing play
+    var idx2=games[gid].plays.findIndex(function(x){return x.id===editId;});
+    if(idx2>=0){
+      p.id=editId;
+      p.num=games[gid].plays[idx2].num;
+      games[gid].plays[idx2]=p;
+    }
+    editId=null;
+    document.getElementById('edit-banner').style.display='none';
+    document.getElementById('log-play-btn').textContent='+ Log play';
+  } else {
+    games[gid].plays.push(p);
+    scoreResult(res);
+  }
   if(qbv){lastQB=qbv;document.getElementById('qb').value=qbv;}
   save();updateStats();renderLog();
   afterPlay(res,yards,dist,dIdx,side,yl);
@@ -537,7 +669,7 @@ function renderLog(){
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
     var tc=TC[p.playtype==='Toss'?'Pass':p.playtype]||'';
     var ni=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';
-    return '<tr>'+
+    return '<tr class="clickable" onclick="editPlay('+p.id+')">'+
       '<td style="width:70px">'+p.down+' &amp; '+p.dist+'</td>'+
       '<td style="width:44px">'+p.hash.replace(' hash','')+'</td>'+
       '<td style="width:62px">'+p.yardline+'</td>'+
@@ -547,7 +679,7 @@ function renderLog(){
       '<td style="width:38px">'+p.defFront+'</td>'+
       '<td style="width:54px">'+p.coverage+'</td>'+
       '<td style="width:80px">'+p.result+'</td>'+
-      '<td style="width:26px;text-align:right"><button class="bd" onclick="delPlay('+p.id+')">&times;</button></td>'+
+      '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
   }).join('');
   el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Hash</th><th>Yard</th><th>Call</th><th>Type</th><th>Yds</th><th>Front</th><th>Cov</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
@@ -1065,7 +1197,15 @@ function aRenderDefense(gPlays, allPlays) {
     }).join('');
 
     // Fronts by formation+hole
-    var formFrontKey = function(p){ return aGetFormation(p.call)+(p.call.split(' ')[1]&&!isNaN(p.call.split(' ')[1])?' '+p.call.split(' ')[1]:''); };
+    var formFrontKey = function(p){
+      var form = aGetFormation(p.call);
+      var parts = p.call.split(' ');
+      // For Money formations (2 tokens for formation), hole is 3rd token
+      var isMoney = form.indexOf('Money')===0;
+      var holeIdx = isMoney ? 2 : 1;
+      var hole = parts[holeIdx] && !isNaN(parts[holeIdx]) ? parts[holeIdx] : '';
+      return form + (hole ? ' '+hole : '');
+    };
     var ffPlays = plays.filter(function(p){return p.defFront&&p.defFront!=='—';});
     var ffGroups = aGroupBy(ffPlays, formFrontKey);
     var ffSorted = Object.keys(ffGroups).map(function(k){
@@ -1159,7 +1299,7 @@ function aRenderRedzone(gPlays, allPlays) {
     var rows = filtered.map(function(p){
       var yc = p.yards>0?'a-yp':p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
       var ys = p.yards>0?'+'+p.yards:String(p.yards);
-      return '<tr>'+
+      return '<tr class="clickable" onclick="editPlay('+p.id+')">'+
         '<td class="l" style="width:54px">'+p.down+' &amp; '+p.dist+'</td>'+
         '<td class="l" style="width:44px">'+p.hash.replace(' hash','')+'</td>'+
         '<td class="l">'+p.call+'</td>'+
@@ -1184,135 +1324,6 @@ function aRenderRedzone(gPlays, allPlays) {
     (sRZ.length ? rzTopCards(sRZ,true)+rzPlayLog(sRZ,false,true)+rzPlayLog(sRZ,true,true) : '<div class="a-fn" style="padding:8px 0">No red zone plays this season.</div>');
 }
 
-
-
-// ============================================================
-// CHAT - AI assistant with full game data context
-// ============================================================
-
-var chatHistory = [];
-
-function chatKeydown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendChat();
-  }
-}
-
-function buildGameContext() {
-  var lines = [];
-  var allGames = Object.keys(games);
-  if (!allGames.length) return 'No games have been logged yet.';
-
-  lines.push('HB (Hollis-Brookline) Football Play Data:');
-  lines.push('');
-
-  allGames.forEach(function(id) {
-    var g = games[id];
-    var dt = g.date ? new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'No date';
-    lines.push('Game: ' + g.opponent + ' (' + dt + ') — Score: HB ' + (g.scoreUs||0) + ', ' + g.opponent + ' ' + (g.scoreThem||0));
-    lines.push('Total plays: ' + g.plays.length);
-
-    if (g.plays.length) {
-      lines.push('Plays:');
-      g.plays.forEach(function(p) {
-        var parts = [
-          'Q'+p.quarter,
-          p.down+' & '+p.dist,
-          p.yardline,
-          p.hash,
-          'Call: '+p.call,
-          'Type: '+p.playtype,
-          'QB: '+(p.qb||'—'),
-          'Player: '+(p.player||'—'),
-          'Yards: '+p.yards,
-          'Result: '+p.result,
-          'Front: '+(p.defFront||'—'),
-          'Coverage: '+(p.coverage||'—')
-        ];
-        if (p.notes) parts.push('Notes: '+p.notes);
-        lines.push('  - ' + parts.join(' | '));
-      });
-    }
-    lines.push('');
-  });
-
-  return lines.join('\n');
-}
-
-async function sendChat() {
-  if (!navigator.onLine) {
-    document.getElementById('chat-offline').style.display = 'block';
-    document.getElementById('chat-input-row').style.display = 'none';
-    return;
-  }
-  document.getElementById('chat-offline').style.display = 'none';
-  document.getElementById('chat-input-row').style.display = 'flex';
-
-  var input = document.getElementById('chat-input');
-  var msg = input.value.trim();
-  if (!msg) return;
-
-  var messagesEl = document.getElementById('chat-messages');
-  var sendBtn = document.getElementById('chat-send');
-
-  // Add user message
-  input.value = '';
-  sendBtn.disabled = true;
-  sendBtn.textContent = '...';
-
-  messagesEl.innerHTML += '<div class="chat-msg-user">' + msg.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
-
-  // Add thinking indicator
-  var thinkId = 'think-' + Date.now();
-  messagesEl.innerHTML += '<div class="chat-thinking" id="'+thinkId+'">Thinking...</div>';
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-
-  // Build messages for API
-  chatHistory.push({ role: 'user', content: msg });
-
-  var systemPrompt = 'You are a football analytics assistant for the Hollis-Brookline (HB) Cavaliers football team. You have access to the team\'s complete play-by-play data AND the full 2026 offensive playbook including complementary plays and pass vs coverage guidance. Answer questions concisely. When suggesting complementary plays, reference the playbook pairings. Focus on actionable insights for coaches. Keep responses brief — this is a sideline tool.' + '\n\nPLAYBOOK KNOWLEDGE:\n\nNUMBERING SYSTEM:\n10s/11s=Pass game | 28/29=Sprint out pass | 30=Screens | 40/41=Sprint out opposite | 50/51=Inside Zone Read | 58/59=Outside Zone Toss | 80s=Man/Hole runs | 1/2=Blood/Booger\n\nFORMATIONS: Queen, Queen Left, Trips, Trips Left, Joker, Joker Left, Taxi, Taxi Left, Bunch, Money\n\nMOTIONS: mo=A motion | Z mo=Z motion | A mo=A motion | orb=orbit | Any pass motion=release to flats\n\nCOMPLEMENTARY PLAYS:\nQUEEN/KING Run: 51/58 Same | 83 Gorilla/84 Bear Q | mo 51/mo 58 Same | mo 58 Jet/mo 85 Gorilla\nQUEEN/KING Pass: Fist/Bow | Spears/Chop | Smash/Y Low | Bell/Bell Switch | mo Spears/mo 28 Levels\nQUEEN/KING Run+Pass: 51/41 Nebraska | 51/41 Fred or Stan | mo 58 Jet/mo 10 Spears\nTRIPS/TREY Run: 51/58 Same | 85 Gorilla/84 Bear Q | mo 51/mo 58 Same | 51/9 Blood\nTRIPS/TREY Pass: Fist/Bow | Spears/Bow | Bell/Bell Switch | 28 Levels/28 Sticks\nTRIPS/TREY Run+Pass: 51/41 Nebraska | 51/41 Fred, Stan, Tony | mo 58 Same/mo 10 Chop\nJOKER Run: 51/58 Same | 85 Gorilla/84 Bear Q | mo 58 Jet/Z mo 58 Same | Z mo 85 Gorilla/Z mo 88 GoaT Q\nJOKER Pass: Chop/Bow | Spears Bow/Bell Switch | Smash/Y Low | mo 28 Levels/mo 28 Sticks\nJOKER Run+Pass: 51/41 Nebraska | mo 88 Goat Q/mo 41 Nebraska | mo 58 Jet/mo 28 Levels\nJOKER B-left: 50, 59 Same, 88 Hogs, 85 Gorilla Q, 11 Bow, 11 Chop | Z mo 50, Z mo 59 Same, Z mo 29 Bow\nJOKER B-right: 58 Same, 85 Gorilla, 88 Hogs Q, 10 Bow, 10 Chop | A mo 85 Gorilla, A mo 58 Same, A mo 28 RCA\nTAXI/TRAIN Run: 58 American/59 | 83 Bear/82 Bear | 85 Badger/86 Badger | orb 85 Gorilla/orb 86 Goat Q\nTAXI/TRAIN Pass: Smash/Bow | Chop/Bell | orb 28 Levels/orb 28 Sticks\n\nPASS vs COVERAGE:\nFist: Cover 3 (outside), Cover 4/2 (inside)\nSpears: Cover 3 (read OLB), Cover 1, 0, 4/2\nChop: Cover 1, 0, 3 (read OLB)\nBow: Cover 3 (flats), Cover 0 (MOR), Cover 4/2 (MOR)\nSmash: Cover 3 (read corner)\nY Low: Cover 0/1, Cover 3 (read $)\nBell: Cover 3 (read $)\nBell Switch: Cover 3 (read corner), Cover 0 (read OLB matchup)\nCover 2: Fade/Flat to cov-2 hole (outside numbers 10-15 yds), Bell (Y bender)\nCover 0: Slants (double slants, slant/bubble, slant/wheel)\nCover 1: Slant/wheel, Shallow, Comebacks\nMan 2: Screens or draws\n\nPLAY DEFINITIONS:\n50/51=Inside Zone Read | 58/59 Same=Outside Zone Toss | Jet=Jet Sweep (A motion) | Bear=Iso lead | Gorilla=Trap (backside G pulls) | Hogs=Buck | Badger=Guard pull | Goat=T leads | Blood/Booger=Outside Zone reads\nFist=Hitches | Spears=Slants | Chop=Slant Arrow | Bow=Fade Speedout | Bell=Verts | Bell Switch=Switch Verts | Smash=Hitch Corner | Y Low=Mesh | Depot=Double Post | Sticks=Comeback/Corner/Arrow/Slant | Levels=Fade/Out/Speedout/Slant | RCA=Return/Corner/Arrow | Python=Comeback/Speedout/Out/Fade\nScreens: Rain=30, Hail=31, Hurricane=mo Hurricane\n\nPLAY DATA:\n' + buildGameContext();
-
-  try {
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: chatHistory
-      })
-    });
-
-    var data = await response.json();
-    var reply = '';
-
-    if (data.content && data.content.length) {
-      reply = data.content.filter(function(b){ return b.type==='text'; }).map(function(b){ return b.text; }).join('');
-    } else if (data.error) {
-      reply = 'Error: ' + data.error.message;
-    }
-
-    // Remove thinking indicator
-    var thinkEl = document.getElementById(thinkId);
-    if (thinkEl) thinkEl.remove();
-
-    // Add AI response
-    chatHistory.push({ role: 'assistant', content: reply });
-    messagesEl.innerHTML += '<div class="chat-msg-ai">' + reply.replace(/\n/g,'<br>').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/&lt;br&gt;/g,'<br>') + '</div>';
-
-  } catch(err) {
-    var thinkEl = document.getElementById(thinkId);
-    if (thinkEl) thinkEl.remove();
-    messagesEl.innerHTML += '<div class="chat-msg-error">Could not reach the AI. Check your connection and try again.</div>';
-    chatHistory.pop(); // remove failed message
-  }
-
-  sendBtn.disabled = false;
-  sendBtn.textContent = 'Send';
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
 
 </script>
 </body>
