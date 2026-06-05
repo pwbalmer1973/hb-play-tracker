@@ -264,9 +264,9 @@ button{cursor:pointer;font-family:inherit}
           <option value="Incomplete">Incomplete</option>
           <option value="Interception">Interception</option>
           <option value="1st down">1st down</option>
-          <option value="Penalty defense">Penalty &#8212; defense</option>
-          <option value="Penalty offense">Penalty &#8212; offense</option>
-          <option value="Sack">Sack</option><option value="Safety">Safety</option>
+          <option value="D Penalty">D Penalty</option>
+          <option value="O Penalty">O Penalty</option>
+          <option value="Sack">Sack</option>
           <option value="Touchdown">Touchdown</option>
           <option value="Turnover on downs">Turnover on downs</option>
         </select>
@@ -332,8 +332,8 @@ button{cursor:pointer;font-family:inherit}
       <button class="a-stab" onclick="aTab('tendency',this)">Play tendencies</button>
       <button class="a-stab" onclick="aTab('efficiency',this)">Efficiency</button>
       <button class="a-stab" onclick="aTab('critical',this)">Critical Conversions</button>
-      <button class="a-stab" onclick="aTab('defense',this)">Defensive looks</button>
       <button class="a-stab" onclick="aTab('redzone',this)">Red zone</button>
+      <button class="a-stab" onclick="aTab('defense',this)">Defensive looks</button>
     </div>
   </div>
   <div id="a-pane-summary" class="a-pane active"></div>
@@ -1086,7 +1086,7 @@ function aPlayerRows(plays) {
   var pm = {};
   plays.forEach(function(p) {
     var plyr = p.player;
-    if (!plyr || plyr==='—') return;
+    if (!plyr || plyr==='—' || plyr==='-' || plyr==='—') return;
     var isQBRush = p.playtype==='Run' && p.qb && p.player===p.qb;
     if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,recYds:0,tgts:0,rec:0,recTDs:0,rec1D:0};
     if ((p.playtype==='Run'||p.playtype==='Toss') && !isQBRush) {
@@ -1136,14 +1136,14 @@ function aQBRow(plays) {
   var qm = {};
   plays.forEach(function(p) {
     var qb = p.qb;
-    if (!qb || qb==='—') return;
+    if (!qb || qb==='—' || qb==='-' || qb==='—') return;
     if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
     if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
       else if (p.result==='Incomplete') { qm[qb].att++; }
       else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
       else if (p.result==='1st down') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].pass1D++; }
-      else if (p.result==='Sack') { qm[qb].att++; qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
+      else if (p.result==='Sack') { qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
     }
     if (p.playtype==='Run' && p.player===qb) {
       qm[qb].rushAtt++; qm[qb].rushYds+=p.yards;
