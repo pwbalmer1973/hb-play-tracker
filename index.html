@@ -1141,6 +1141,7 @@ function aQBRow(plays) {
     if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
       else if (p.result==='Incomplete') { qm[qb].att++; }
+      else if (p.result==='Interception') { qm[qb].att++; }
       else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
       else if (p.result==='1st down') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].pass1D++; }
       else if (p.result==='Sack') { qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
@@ -1341,9 +1342,10 @@ function aRenderEfficiency(gPlays, allPlays) {
         '<div><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
         '<div><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
         '</div>'+
-        '<div style="margin-top:8px;background:var(--color-background-secondary);border-radius:8px;padding:8px">'+
-        '<div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Top 5 plays</div>'+
-        '<table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+top5rows+'</tbody></table>'+(hasTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div>'+
+        '<div style="margin-top:10px">'+
+        '<div style="background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px 8px 0 0">Top 5 Plays</div>'+
+        '<div style="background:var(--color-background-secondary);border-radius:0 0 8px 8px;padding:8px">'+
+        '<table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+top5rows+'</tbody></table>'+(hasTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div>';
     }).join('');
 
