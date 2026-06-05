@@ -106,9 +106,9 @@ button{cursor:pointer;font-family:inherit}
 .a-rpleg{display:flex;gap:12px;font-size:11px;color:#6e6e73}
 .a-rpdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
 .a-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
-.a-tbl th{text-align:right;font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.04em;padding:4px 6px 6px;border-bottom:.5px solid #f0f0f5;white-space:nowrap}
+.a-tbl th{text-align:center;font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.04em;padding:4px 6px 6px;border-bottom:.5px solid #f0f0f5;white-space:nowrap}
 .a-tbl th.l{text-align:left}
-.a-tbl td{padding:5px 6px;border-bottom:.5px solid #f5f5f7;color:#1d1d1f;text-align:right;font-variant-numeric:tabular-nums}
+.a-tbl td{padding:5px 6px;border-bottom:.5px solid #f5f5f7;color:#1d1d1f;text-align:center;font-variant-numeric:tabular-nums}
 .a-tbl td.l{text-align:left}
 .a-tbl tr:last-child td{border-bottom:none}
 .a-tbl tr:hover td{background:#f9f9fb}
@@ -1198,18 +1198,18 @@ function aRenderSummary(gPlays, allPlays, g) {
     aRpBar(rp,false)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
     '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1D</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1D</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct">QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1D</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1D</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1D</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1D</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
 }
 
 function aRenderTendency(gPlays, allPlays) {
