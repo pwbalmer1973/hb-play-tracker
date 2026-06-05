@@ -248,7 +248,7 @@ button{cursor:pointer;font-family:inherit}
     </div>
     <div class="r4">
       <div class="fg"><label class="fl">Play type</label>
-        <select id="ptype" onchange="autoComp()"><option value="">&#8212;</option><option value="Run">Run</option><option value="Pass">Pass</option><option value="Toss">Toss</option></select>
+        <select id="ptype" onchange="autoComp();onPlayerInput()"><option value="">&#8212;</option><option value="Run">Run</option><option value="Pass">Pass</option><option value="Toss">Toss</option></select>
       </div>
       <div class="fg"><label class="fl">Yards gained / lost</label>
         <input type="number" id="yds" placeholder="e.g. 5 or -2" oninput="autoComp()">
@@ -392,8 +392,8 @@ function showAutocomplete(inputId,listId,matches){
   var list=document.getElementById(listId);
   if(!matches.length){list.classList.remove('show');return;}
   list.innerHTML=matches.map(function(p){
-    var val='#'+p.num+' '+p.name;
-    return '<div class="autocomplete-item" onmousedown="pickPlayer(this)" data-input="'+inputId+'" data-list="'+listId+'" data-val="'+val+'"><strong>#'+p.num+'</strong> '+p.name+' <span style="color:#6e6e73;font-size:11px">'+p.pos+'</span></div>';
+    var val=p.num+' '+p.name;
+    return '<div class="autocomplete-item" onmousedown="pickPlayer(this)" data-input="'+inputId+'" data-list="'+listId+'" data-val="'+val+'"><strong>'+p.num+'</strong> '+p.name+' <span style="color:#6e6e73;font-size:11px">'+p.pos+'</span></div>';
   }).join('');
   list.classList.add('show');
 }
@@ -417,7 +417,12 @@ function onQBInput(){
 
 function onPlayerInput(){
   var q=document.getElementById('plyr').value;
-  showAutocomplete('plyr','plyr-list',rosterMatch(q,ROSTER));
+  var pt=document.getElementById('ptype').value;
+  var list=ROSTER;
+  if(pt==='Run'||pt==='Toss'){
+    list=ROSTER.filter(function(p){return p.pos==='RB'||p.pos==='QB';});
+  }
+  showAutocomplete('plyr','plyr-list',rosterMatch(q,list));
 }
 var games={},gid=null,Q=1,lastQB='',editId=null;
 
@@ -1062,7 +1067,7 @@ function aPlayerRows(plays) {
     if (!plyr || plyr==='—') return;
     var isQBRush = p.playtype==='Run' && p.qb && p.player===p.qb;
     if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,recYds:0,tgts:0,rec:0,recTDs:0};
-    if (p.playtype==='Run' && !isQBRush) {
+    if ((p.playtype==='Run'||p.playtype==='Toss') && !isQBRush) {
       pm[plyr].rushAtt++;
       pm[plyr].rushYds += p.yards;
       if (p.result==='Touchdown') pm[plyr].rushTDs++;
@@ -1073,15 +1078,22 @@ function aPlayerRows(plays) {
       else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
     }
   });
+  // Look up roster info
+  function getRosterInfo(name) {
+    if (!name) return {num:'',pos:''};
+    var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===name || p.name===name; });
+    return r ? {num:r.num, pos:r.pos} : {num:'', pos:''};
+  }
   return Object.keys(pm).map(function(k){
     var s = pm[k];
-    return {name:k, s:s, total:s.rushYds+s.recYds};
+    var ri = getRosterInfo(k);
+    return {name:k, s:s, total:s.rushYds+s.recYds, num:ri.num, pos:ri.pos};
   }).filter(function(r){ return r.total>0||r.s.tgts>0||r.s.rushAtt>0; })
     .sort(function(a,b){ return b.total-a.total; })
     .map(function(r){
       var s = r.s;
       var d = function(v){ return v?v:'—'; };
-      return '<tr><td class="l">'+r.name+'</td>'+
+      return '<tr><td class="l">'+(r.num||'—')+'</td><td class="l">'+r.name+'</td><td class="l">'+(r.pos||'—')+'</td>'+
         '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
         '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td></tr>';
     }).join('');
@@ -1161,7 +1173,7 @@ function aRenderSummary(gPlays, allPlays, g) {
     aRpBar(rp,false)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
     '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct">QB Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
@@ -1170,7 +1182,7 @@ function aRenderSummary(gPlays, allPlays, g) {
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:20%">Player</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
 }
