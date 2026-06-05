@@ -495,12 +495,21 @@ function autoComp(){
   var r=document.getElementById('res');
   if(y==='') return;
   var yards=parseInt(y,10);
-  if((pt==='Pass'||pt==='Toss')&&(r.value===''||r.value==='Completion')){
-    r.value='Completion';
-  } else if((pt==='Run'||pt==='Toss')&&(r.value===''||r.value==='Gain'||r.value==='Loss')){
-    r.value=yards>=0?'Gain':'Loss';
+  var dist=parseInt(document.getElementById('dst').value,10)||10;
+  var autoResults=['','Gain','Loss','Completion','1st down'];
+  // Only auto-fill if result is blank or was previously auto-filled
+  if(autoResults.indexOf(r.value)<0) return;
+  if(pt==='Run'||pt==='Toss'){
+    if(yards>=dist) r.value='1st down';
+    else if(yards>0) r.value='Gain';
+    else r.value='Loss';
+  } else if(pt==='Pass'){
+    if(yards>=10) r.value='1st down';
+    else if(yards>0) r.value='Completion';
+    else r.value='';
   }
 }
+
 
 function saveScore(){
   if(!gid)return;
@@ -1066,19 +1075,20 @@ function aPlayerRows(plays) {
     var plyr = p.player;
     if (!plyr || plyr==='—') return;
     var isQBRush = p.playtype==='Run' && p.qb && p.player===p.qb;
-    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,recYds:0,tgts:0,rec:0,recTDs:0};
+    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,recYds:0,tgts:0,rec:0,recTDs:0,rec1D:0};
     if ((p.playtype==='Run'||p.playtype==='Toss') && !isQBRush) {
       pm[plyr].rushAtt++;
       pm[plyr].rushYds += p.yards;
       if (p.result==='Touchdown') pm[plyr].rushTDs++;
+      if (p.result==='1st down') pm[plyr].rush1D++;
     }
     if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
       else if (p.result==='Incomplete') { pm[plyr].tgts++; }
       else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
+      else if (p.result==='1st down') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].rec1D++; }
     }
   });
-  // Look up roster info
   function getRosterInfo(name) {
     if (!name) return {num:'',pos:''};
     var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===name || p.name===name; });
@@ -1094,8 +1104,8 @@ function aPlayerRows(plays) {
       var s = r.s;
       var d = function(v){ return v?v:'—'; };
       return '<tr><td class="l">'+(r.num||'—')+'</td><td class="l">'+r.name+'</td><td class="l">'+(r.pos||'—')+'</td>'+
-        '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
-        '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td></tr>';
+        '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td><td>'+d(s.rush1D)+'</td>'+
+        '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td><td>'+d(s.rec1D)+'</td></tr>';
     }).join('');
 }
 
@@ -1104,11 +1114,12 @@ function aQBRow(plays) {
   plays.forEach(function(p) {
     var qb = p.qb;
     if (!qb || qb==='—') return;
-    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
+    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
     if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
       else if (p.result==='Incomplete') { qm[qb].att++; }
       else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
+      else if (p.result==='1st down') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].pass1D++; }
       else if (p.result==='Sack') { qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
     }
     if (p.playtype==='Run' && p.player===qb) {
@@ -1121,7 +1132,7 @@ function aQBRow(plays) {
     var compPct = s.att ? Math.round(s.comp/s.att*100)+'%' : '—';
     var d = function(v){ return v?v:'—'; };
     return '<tr><td class="l">'+qb+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
-      '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td>'+
+      '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td><td>'+d(s.pass1D)+'</td>'+
       '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
       '<td>'+d(s.sacks)+'</td><td>'+d(s.sackYds)+'</td></tr>';
   }).join('');
@@ -1173,18 +1184,18 @@ function aRenderSummary(gPlays, allPlays, g) {
     aRpBar(rp,false)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
     '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Rush 1D</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th><th>Rec 1D</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct">QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:10%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Pass 1D</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Rush 1D</th><th>Tgts</th><th>Rec</th><th>Rec yds</th><th>Rec TDs</th><th>Rec 1D</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l" style="width:12%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
+    '<table class="a-tbl"><thead><tr><th class="l" style="width:10%">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass yds</th><th>Pass TDs</th><th>Pass 1D</th><th>Rush att</th><th>Rush yds</th><th>Rush TDs</th><th>Sacks</th><th>Sack yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
 }
 
 function aRenderTendency(gPlays, allPlays) {
