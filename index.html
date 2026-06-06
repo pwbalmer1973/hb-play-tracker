@@ -1394,6 +1394,7 @@ function aRenderCritical(gPlays, allPlays, gameLabel) {
     // Play log
     var logRows = dp.map(function(p){
       var yc = p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
+      var ys = p.yards>0?'+'+p.yards:String(p.yards);
       var dnDist = p.down+' & '+p.dist;
       return '<tr>'+
         '<td class="l">'+dnDist+'</td>'+
