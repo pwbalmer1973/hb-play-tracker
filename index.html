@@ -836,7 +836,7 @@ function impBackup(ev){
       var c=Object.keys(d.games).length;
       if(!confirm('Load '+c+' game(s) from backup?'))return;
       Object.keys(d.games).forEach(function(id){games[id]=d.games[id];});
-      save();updateBanner();loadScore();updateStats();renderLog();drawGames();
+      save();updateBanner();loadScore();updateStats();renderLog();drawGames();if(typeof aInit==='function')aInit();
       toast('Restored \u2014 '+c+' game(s) loaded');
     }catch(e){alert('Could not read backup file.');}
   };
@@ -1350,9 +1350,7 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
         '</div>';
     }).join('');
 
-    return 
-
-      '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays by Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
+    return '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays by Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
   }
 
   el.innerHTML = aSection(gameLabel||'This Game') + effCards(gPlays, false, gameLabel||'This Game');
