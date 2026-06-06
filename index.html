@@ -57,20 +57,18 @@ button{cursor:pointer;font-family:inherit}
 .bd{background:transparent;border:none;color:#ff3b30;font-size:12px;padding:4px 8px;border-radius:6px;cursor:pointer}
 .bsm{padding:5px 10px;font-size:12px}
 .lw{overflow-x:auto}
-.lt{width:100%;border-collapse:collapse;font-size:11px}
+.lt{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;min-width:600px}
 .lt th{text-align:left;font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;padding:6px 5px;border-bottom:1px solid #f0f0f5;white-space:nowrap}
-.lt td{padding:6px 5px;border-bottom:.5px solid #f5f5f7;color:#1d1d1f;vertical-align:middle;white-space:nowrap}
+.lt td{padding:6px 5px;border-bottom:1px solid #f5f5f7;color:#1d1d1f;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lt tr:last-child td{border-bottom:none}
 .lt tr:hover td{background:#f0f4ff}
-.yp{}
-.yn{color:#ff3b30!important;font-weight:600}
+.yp{color:#34c759;font-weight:600}
+.yn{color:#ff3b30;font-weight:600}
 .yz{color:#6e6e73}
 .es{text-align:center;color:#aeaeb2;padding:2rem;font-size:13px}
 .pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
 .pr{background:#d1f5e0;color:#1a7a3c}
 .pp{background:#ddeeff;color:#0055cc}
-.pt{background:#fff0e0;color:#cc6600}
-.py{background:#fff9db;color:#9a6e00}
 .gi{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e5e5ea;border-radius:10px;margin-bottom:8px}
 .gi.ag{border-color:#1a3a8c;background:#f0f4ff}
 .gn{font-weight:600;font-size:13px}
@@ -110,26 +108,36 @@ button{cursor:pointer;font-family:inherit}
 .a-tbl th{text-align:center;font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.04em;padding:4px 6px 6px;border-bottom:.5px solid #f0f0f5;white-space:nowrap}
 .a-tbl th.l{text-align:left}
 .a-tbl td{padding:5px 6px;border-bottom:.5px solid #f5f5f7;color:#1d1d1f;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-.a-tbl td.l{text-align:left;white-space:nowrap}
+.a-tbl td.l{text-align:left}
 .a-tbl tr:last-child td{border-bottom:none}
 .a-tbl tr:hover td{background:#f9f9fb}
 .a-grp td{background:#f5f5f7;font-size:11px;font-weight:600;color:#1d1d1f;padding:5px 6px;border-bottom:.5px solid #e5e5ea;text-align:left}
 .a-bpr{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:600;background:#d1f5e0;color:#1a7a3c}
 .a-bpp{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:600;background:#ddeeff;color:#0055cc}
 .a-bpt{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:600;background:#fff0e0;color:#cc6600}
-.a-yp{color:#34c759;font-weight:600}
 .a-ast{color:#cc7700}
 .a-fn{font-size:10px;color:#6e6e73;margin-top:6px;font-style:italic}
 .a-dh{font-size:12px;font-weight:600;color:#fff;background:#1a3a8c;padding:6px 10px;border-radius:6px;margin-bottom:8px}
 .a-db{margin-bottom:14px}
 .a-db:last-child{margin-bottom:0}
+.a-yp{color:#34c759!important;font-weight:600}
+.a-empty{display:flex;align-items:center;justify-content:center;padding:40px 16px;min-height:200px}
+.a-empty-inner{text-align:center;max-width:320px}
+.a-empty-icon{font-size:36px;margin-bottom:12px}
+.a-empty-title{font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:8px}
+.a-empty-msg{font-size:12px;color:#6e6e73;line-height:1.5}
 
 .edit-banner{background:#1a3a8c;color:#fff;border-radius:8px;padding:8px 14px;margin-bottom:10px;display:none;align-items:center;justify-content:space-between}
 .edit-banner-text{font-size:13px;font-weight:500}
 .edit-banner-cancel{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit}
 .log-table tr.clickable{cursor:pointer}
 .log-table tr.clickable:hover td{background:#e8f0ff}
-
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d2d2d7;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:200;max-height:160px;overflow-y:auto;display:none}
+.autocomplete-list.show{display:block}
+.autocomplete-item{padding:8px 10px;font-size:13px;cursor:pointer;color:#1d1d1f}
+.autocomplete-item:hover{background:#f0f4ff}
+.autocomplete-item strong{color:#1a3a8c}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
 .modal-box{background:#fff;border-radius:14px;padding:20px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
@@ -137,13 +145,6 @@ button{cursor:pointer;font-family:inherit}
 .modal-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .modal-label{font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.06em}
 .modal-btns{display:flex;gap:8px;margin-top:16px}
-
-.autocomplete-wrap{position:relative}
-.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d2d2d7;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:200;max-height:160px;overflow-y:auto;display:none}
-.autocomplete-list.show{display:block}
-.autocomplete-item{padding:8px 10px;font-size:13px;cursor:pointer;color:#1d1d1f}
-.autocomplete-item:hover{background:#f0f4ff}
-.autocomplete-item strong{color:#1a3a8c}
 </style>
 </head>
 <body>
@@ -164,11 +165,7 @@ button{cursor:pointer;font-family:inherit}
 <div id="pane-log" class="pane active">
   <div class="gbanner">
     <div><div class="gbl">Current game</div><div class="gbn" id="gname">No game selected</div></div>
-    <div style="display:flex;gap:6px">
-      <button class="bs bsm" onclick="openGameModal()">New game</button>
-      <button class="bs bsm" onclick="showTab('games')">Switch game</button>
-      <button class="bs bsm" id="game-over-btn" onclick="gameOver()" style="display:none;background:#fff0f0;border-color:#ff3b30;color:#ff3b30">Game Over</button>
-    </div>
+    <button class="bs bsm" onclick="showTab('games')">Switch game</button>
   </div>
   <div class="score-row">
     <div class="score-box"><div class="slhb">HB</div><input class="si" type="number" id="sus" value="0" min="0" onchange="saveScore()"></div>
@@ -182,12 +179,8 @@ button{cursor:pointer;font-family:inherit}
     <div class="sc"><div class="sl">Avg gain</div><div class="sv" id="sav">&#8212;</div></div>
     <div class="sc"><div class="sl">Quarter</div><div class="sv" id="sqtr">Q1</div></div>
   </div>
-  <div class="edit-banner" id="edit-banner">
-    <div class="edit-banner-text" id="edit-banner-text">Editing play</div>
-    <button class="edit-banner-cancel" onclick="cancelEdit()">&#10005; Cancel</button>
-  </div>
-  <div class="card" id="log-card">
-    <div class="ct" id="log-card-title">Log a play</div>
+  <div class="card">
+    <div class="ct">Log a play</div>
     <div class="qtabs">
       <button class="qt active" onclick="setQ(1,this)">Q1</button>
       <button class="qt" onclick="setQ(2,this)">Q2</button>
@@ -201,7 +194,7 @@ button{cursor:pointer;font-family:inherit}
       <div class="fg"><label class="fl">Hash</label><select id="hsh"><option>Left hash</option><option>Middle</option><option>Right hash</option></select></div>
       <div class="fg"><label class="fl">Yard line</label>
         <div style="display:flex;gap:6px;align-items:center">
-          <select id="yside" style="width:auto;flex:0 0 auto" onchange="tdYards()"><option value="ours">HB</option><option value="theirs">OP</option></select>
+          <select id="yside" style="width:auto;flex:0 0 auto" onchange="tdYards()"><option value="ours">Ours</option><option value="theirs">Theirs</option></select>
           <input type="number" id="yline" placeholder="25" min="1" max="50" style="flex:1" oninput="tdYards()">
         </div>
       </div>
@@ -271,21 +264,13 @@ button{cursor:pointer;font-family:inherit}
           <option value="Turnover on downs">Turnover on downs</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">QB</label>
-        <div class="autocomplete-wrap">
-          <input type="text" id="qb" placeholder="Name or #" oninput="onQBInput()" onblur="hideAutocomplete('qb-list')" autocomplete="off">
-          <div class="autocomplete-list" id="qb-list"></div>
-        </div></div>
+      <div class="fg"><label class="fl">QB</label><input type="text" id="qb" placeholder="Name or #"></div>
     </div>
     <div class="r4">
-      <div class="fg"><label class="fl">Ball carrier / target</label>
-        <div class="autocomplete-wrap">
-          <input type="text" id="plyr" placeholder="Name or #" oninput="onPlayerInput()" onblur="hideAutocomplete('plyr-list')" autocomplete="off">
-          <div class="autocomplete-list" id="plyr-list"></div>
-        </div></div>
+      <div class="fg"><label class="fl">Ball carrier / target</label><input type="text" id="plyr" placeholder="Name or #"></div>
       <div class="fg"><label class="fl">Def front</label><select id="dfront"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
       <div class="fg"><label class="fl">Coverage</label><select id="cov"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
-      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
+      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%">+ Log play</button></div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label class="fl">Notes</label><textarea id="notes" placeholder="Free form notes..."></textarea></div>
     <div class="brow"><button class="bs" onclick="doExport()">&#8595; Export</button></div>
@@ -320,7 +305,6 @@ button{cursor:pointer;font-family:inherit}
   </div>
 </div>
 </div>
-
 <div id="pane-analytics" class="pane">
   <div style="background:var(--color-background-primary);padding:10px 14px;border-bottom:.5px solid var(--color-border-tertiary);margin:0 -16px 12px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -328,9 +312,9 @@ button{cursor:pointer;font-family:inherit}
       <select id="a-game-sel" style="font-size:12px;padding:5px 8px;flex:1" onchange="aRender()"></select>
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap">
-      <button class="a-stab active" onclick="aTab('summary',this)">Game summary</button>
-      <button class="a-stab" onclick="aTab('tendency',this)">Plays By Down</button>
-      <button class="a-stab" onclick="aTab('efficiency',this)">Field Position</button>
+      <button class="a-stab active" onclick="aTab('summary',this)">Game Summary</button>
+      <button class="a-stab" onclick="aTab('tendency',this)">Plays by Down</button>
+      <button class="a-stab" onclick="aTab('efficiency',this)">Plays by Field Position</button>
       <button class="a-stab" onclick="aTab('critical',this)">Critical Conversions</button>
       <button class="a-stab" onclick="aTab('redzone',this)">Red Zone</button>
       <button class="a-stab" onclick="aTab('defense',this)">Defensive Looks</button>
@@ -339,29 +323,9 @@ button{cursor:pointer;font-family:inherit}
   <div id="a-pane-summary" class="a-pane active"></div>
   <div id="a-pane-tendency" class="a-pane"></div>
   <div id="a-pane-efficiency" class="a-pane"></div>
-  <div id="a-pane-defense" class="a-pane"></div>
   <div id="a-pane-critical" class="a-pane"></div>
   <div id="a-pane-redzone" class="a-pane"></div>
-</div>
-
-
-
-<div class="modal-overlay" id="new-game-modal" onclick="if(event.target===this)closeGameModal()">
-  <div class="modal-box">
-    <div class="modal-title">New Game</div>
-    <div class="modal-row">
-      <label class="modal-label">Opponent</label>
-      <input type="text" id="modal-opp" placeholder="e.g. Concord High">
-    </div>
-    <div class="modal-row">
-      <label class="modal-label">Date</label>
-      <input type="date" id="modal-date">
-    </div>
-    <div class="modal-btns">
-      <button class="bp" onclick="createGameFromModal()" style="flex:1">Create game</button>
-      <button class="bs" onclick="closeGameModal()">Cancel</button>
-    </div>
-  </div>
+  <div id="a-pane-defense" class="a-pane"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -808,8 +772,8 @@ function renderLog(){
     var ni=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';
     return '<tr class="clickable" onclick="editPlay('+p.id+')">'+
       '<td>'+p.down+' &amp; '+p.dist+'</td>'+
-      '<td>'+p.hash.replace(' hash','')+'</td>'+
       '<td>'+p.yardline+'</td>'+
+      '<td>'+p.hash.replace(' hash','')+'</td>'+
       '<td>'+p.call+ni+'</td>'+
       '<td style="width:46px"><span class="pill '+tc+'">'+p.playtype+'</span></td>'+
       '<td>'+p.defFront+'</td>'+
@@ -819,7 +783,7 @@ function renderLog(){
       '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
   }).join('');
-  el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Hash</th><th>Yard</th><th>Call</th><th>Type</th><th>Front</th><th>Cov</th><th>Yds</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Yard</th><th>Hash</th><th>Call</th><th>Type</th><th>Front</th><th>Cov</th><th>Yds</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function newGame(){
@@ -931,7 +895,14 @@ function aRender() {
   if (!sel) return;
   var selId = sel.value;
   var selGame = games[selId];
-  if (!selGame) return;
+  var emptyMsg = '<div class="a-empty"><div class="a-empty-inner"><div class="a-empty-icon">&#128203;</div><div class="a-empty-title">No data yet</div><div class="a-empty-msg">Import a game or create a new game and enter plays to see analytics here.</div></div></div>';
+  if (!selGame || !selGame.plays || !selGame.plays.length) {
+    ['summary','tendency','efficiency','critical','redzone','defense'].forEach(function(t){
+      var el = document.getElementById('a-pane-'+t);
+      if (el) el.innerHTML = emptyMsg;
+    });
+    return;
+  }
   var allPlays = [];
   Object.keys(games).forEach(function(id){ allPlays = allPlays.concat(games[id].plays); });
   function noPenalty(p){ return p.result!=='O Penalty'&&p.result!=='D Penalty'; }
@@ -1303,12 +1274,12 @@ function aRenderTendency(gPlays, allPlays, gameLabel) {
       var dpHasAst = aTableRows(dpg).some(function(r){return r.skewed;});
       return '<div class="a-db"><div class="a-dh">'+dn+' down — '+dp.length+' plays</div>'+
         '<div class="a-g2">'+
-        '<div class="a-card"><div class="a-ct-season">Formations By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-        '<div class="a-card"><div class="a-ct-season">Plays By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct-season">Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct-season">Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div></div>';
     }).join('');
 
-    return '<div class="a-card"><div class="a-ct">By Down — Summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
+    return '<div class="a-card"><div class="a-ct">by Down — Summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
       '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Down</div><div style="padding:12px 14px">'+downDetail+'</div></div>';
   }
 
@@ -1322,7 +1293,8 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
   function playGroups(plays){ return aGroupBy(plays, function(p){ return aGetPlay(p.call); }); }
   function formGroups(plays){ return aGroupBy(plays, function(p){ return aGetFormation(p.call); }); }
 
-  function effCards(plays, season) {
+  function effCards(plays, season, gl) {
+    var secLabel = gl||gameLabel||'This Game';
     var ct = season ? 'a-ct-season' : 'a-ct';
     var pg = playGroups(plays);
     var fg = formGroups(plays);
@@ -1368,8 +1340,8 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
       var hasTop5Ast = top5.some(function(p){return aSkewed(callGroups[p.call]||[p]);});
       return '<div class="a-db"><div class="a-dh">'+h+' — '+hp.length+' plays</div>'+
         '<div class="a-g2">'+
-        '<div class="a-card"><div class="a-ct-season">Formations By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-        '<div class="a-card"><div class="a-ct-season">Plays By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct-season">Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct-season">Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div>'+
         '<div style="margin-top:10px">'+
         '<div style="background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px 8px 0 0">Top 5 Plays</div>'+
@@ -1380,10 +1352,10 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
 
     return 
 
-      '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
+      '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays by Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
   }
 
-  el.innerHTML = aSection(gameLabel) + effCards(gPlays, false);
+  el.innerHTML = aSection(gameLabel) + effCards(gPlays, false, gameLabel);
 }
 
 
@@ -1438,11 +1410,11 @@ function aRenderCritical(gPlays, allPlays, gameLabel) {
     return '<div class="a-card"><div class="'+ct+'">'+dnLabel+' Conversion Rate</div><div style="padding:12px 14px">'+
       '<div class="a-g3" style="margin-bottom:0">'+aStatCard('Attempts',conv.att)+aStatCard('Conversions',conv.conv)+aStatCard('Conv Rate',conv.pct)+'</div></div></div>'+
       '<div class="a-g2">'+
-      '<div class="a-card"><div class="'+ct+'">Best '+dnLabel+' Formations By Avg Gain</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Best '+dnLabel+' Formations by Avg Gain</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+
       (formRows||'<tr><td class="l" colspan="3">No plays</td></tr>')+
       '</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Best '+dnLabel+' Plays By Avg Gain</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Best '+dnLabel+' Plays by Avg Gain</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+
       (playRows||'<tr><td class="l" colspan="3">No plays</td></tr>')+
       '</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
@@ -1528,10 +1500,10 @@ function aRenderDefense(gPlays, allPlays, gameLabel) {
     return '<div class="a-g2">'+
       '<div class="a-card"><div class="'+ct+'">Fronts Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th><th>Run avg</th><th>Pass avg</th></tr></thead><tbody>'+frontRows+'</tbody></table></div></div>'+
       '<div class="a-card"><div class="'+ct+'">Coverages Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+covRows+'</tbody></table></div></div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Fronts By Formation</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Fronts by Formation</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l" style="width:35%">Formation</th><th class="l" style="width:25%">Front</th><th style="width:18%">Count</th><th style="width:18%">Avg</th></tr></thead><tbody>'+ffRows+'</tbody></table>'+
       (hasFFAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Coverage By Play Call</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Coverage by Play Call</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l">Play call</th><th class="l" style="width:22%">Coverage</th><th style="width:16%">Count</th><th style="width:16%">Avg</th></tr></thead><tbody>'+cpRows+'</tbody></table>'+
       (hasCPAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>';
   }
@@ -1551,8 +1523,8 @@ function aRenderDefense(gPlays, allPlays, gameLabel) {
     aSection(gameLabel) + defHTML(gPlays, false) +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g2">'+
-    '<div class="a-card"><div class="a-ct-season">Season Vs Fronts</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div></div>'+
-    '<div class="a-card"><div class="a-ct-season">Season Vs Coverages</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div></div>';
+    '<div class="a-card"><div class="a-ct-season">Season vs Fronts</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div></div>'+
+    '<div class="a-card"><div class="a-ct-season">Season vs Coverages</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+sCovRows+'</tbody></table></div></div></div>';
 }
 
 // ---- RED ZONE ----
@@ -1592,8 +1564,8 @@ function aRenderRedzone(gPlays, allPlays, gameLabel) {
     }).join('');
 
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="'+ct+'">Best Formations By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Best Plays By Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Best Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Best Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
       '<div class="a-g2">'+
       '<div class="a-card"><div class="'+ct+'">Fronts Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th><th>Run Avg</th><th>Pass Avg</th></tr></thead><tbody>'+frontRows+'</tbody></table></div></div>'+
       '<div class="a-card"><div class="'+ct+'">Coverages Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+covRows+'</tbody></table></div></div></div>';
