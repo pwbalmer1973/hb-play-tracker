@@ -69,6 +69,7 @@ button{cursor:pointer;font-family:inherit}
 .pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
 .pr{background:#d1f5e0;color:#1a7a3c}
 .pp{background:#ddeeff;color:#0055cc}
+.pt{background:#fff0e0;color:#cc6600}
 .gi{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e5e5ea;border-radius:10px;margin-bottom:8px}
 .gi.ag{border-color:#1a3a8c;background:#f0f4ff}
 .gn{font-weight:600;font-size:13px}
@@ -1284,7 +1285,7 @@ function aRenderTendency(gPlays, allPlays, gameLabel) {
         '</div></div>';
     }).join('');
 
-    return '<div class="a-card"><div class="a-ct">by Down — Summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
+    return '<div class="a-card"><div class="a-ct">Plays by Down — Summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
       '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Down</div><div style="padding:12px 14px">'+downDetail+'</div></div>';
   }
 
