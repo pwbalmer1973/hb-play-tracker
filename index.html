@@ -180,8 +180,12 @@ button{cursor:pointer;font-family:inherit}
     <div class="sc"><div class="sl">Avg gain</div><div class="sv" id="sav">&#8212;</div></div>
     <div class="sc"><div class="sl">Quarter</div><div class="sv" id="sqtr">Q1</div></div>
   </div>
-  <div class="card">
-    <div class="ct">Log a play</div>
+  <div class="edit-banner" id="edit-banner">
+    <div class="edit-banner-text" id="edit-banner-text">Editing play</div>
+    <button class="edit-banner-cancel" onclick="cancelEdit()">&#10005; Cancel</button>
+  </div>
+  <div class="card" id="log-card">
+    <div class="ct" id="log-card-title">Log a play</div>
     <div class="qtabs">
       <button class="qt active" onclick="setQ(1,this)">Q1</button>
       <button class="qt" onclick="setQ(2,this)">Q2</button>
@@ -271,7 +275,7 @@ button{cursor:pointer;font-family:inherit}
       <div class="fg"><label class="fl">Ball carrier / target</label><input type="text" id="plyr" placeholder="Name or #"></div>
       <div class="fg"><label class="fl">Def front</label><select id="dfront"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
       <div class="fg"><label class="fl">Coverage</label><select id="cov"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
-      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%">+ Log play</button></div>
+      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label class="fl">Notes</label><textarea id="notes" placeholder="Free form notes..."></textarea></div>
     <div class="brow"><button class="bs" onclick="doExport()">&#8595; Export</button></div>
