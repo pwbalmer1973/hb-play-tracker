@@ -167,7 +167,11 @@ button{cursor:pointer;font-family:inherit}
 <div id="pane-log" class="pane active">
   <div class="gbanner">
     <div><div class="gbl">Current game</div><div class="gbn" id="gname">No game selected</div></div>
-    <button class="bs bsm" onclick="showTab('games')">Switch game</button>
+    <div style="display:flex;gap:6px">
+      <button class="bs bsm" onclick="openGameModal()">New game</button>
+      <button class="bs bsm" onclick="showTab('games')">Switch game</button>
+      <button class="bs bsm" id="game-over-btn" onclick="gameOver()" style="display:none">Game Over</button>
+    </div>
   </div>
   <div class="score-row">
     <div class="score-box"><div class="slhb">HB</div><input class="si" type="number" id="sus" value="0" min="0" onchange="saveScore()"></div>
@@ -270,10 +274,18 @@ button{cursor:pointer;font-family:inherit}
           <option value="Turnover on downs">Turnover on downs</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">QB</label><input type="text" id="qb" placeholder="Name or #"></div>
+      <div class="fg"><label class="fl">QB</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="qb" placeholder="Name or #" oninput="onQBInput()" onblur="hideAutocomplete('qb-list')" autocomplete="off">
+          <div class="autocomplete-list" id="qb-list"></div>
+        </div></div>
     </div>
     <div class="r4">
-      <div class="fg"><label class="fl">Ball carrier / target</label><input type="text" id="plyr" placeholder="Name or #"></div>
+      <div class="fg"><label class="fl">Ball carrier / target</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="plyr" placeholder="Name or #" oninput="onPlayerInput()" onblur="hideAutocomplete('plyr-list')" autocomplete="off">
+          <div class="autocomplete-list" id="plyr-list"></div>
+        </div></div>
       <div class="fg"><label class="fl">Def front</label><select id="dfront"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
       <div class="fg"><label class="fl">Coverage</label><select id="cov"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
       <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
@@ -332,6 +344,24 @@ button{cursor:pointer;font-family:inherit}
   <div id="a-pane-critical" class="a-pane"></div>
   <div id="a-pane-redzone" class="a-pane"></div>
   <div id="a-pane-defense" class="a-pane"></div>
+</div>
+
+<div class="modal-overlay" id="new-game-modal" onclick="if(event.target===this)closeGameModal()">
+  <div class="modal-box">
+    <div class="modal-title">New Game</div>
+    <div class="modal-row">
+      <label class="modal-label">Opponent</label>
+      <input type="text" id="modal-opp" placeholder="e.g. Concord High">
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Date</label>
+      <input type="date" id="modal-date">
+    </div>
+    <div class="modal-btns">
+      <button class="bp" onclick="createGameFromModal()" style="flex:1">Create game</button>
+      <button class="bs" onclick="closeGameModal()">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
