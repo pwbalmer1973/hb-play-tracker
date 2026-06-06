@@ -63,7 +63,7 @@ button{cursor:pointer;font-family:inherit}
 .lt tr:last-child td{border-bottom:none}
 .lt tr:hover td{background:#f0f4ff}
 .yp{color:#34c759;font-weight:600}
-.yn{color:#ff3b30;font-weight:600}
+.yn{color:#ff3b30!important;font-weight:600}
 .yz{color:#6e6e73}
 .es{text-align:center;color:#aeaeb2;padding:2rem;font-size:13px}
 .pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
@@ -1183,8 +1183,8 @@ function aPlayerStats(plays) {
     '</tr></thead><tbody>';
 
   var out = '';
-  if (rbRows) out += '<div style="margin-bottom:0"><div class="a-ct-season" style="margin:0 -14px 10px">RB Stats</div>'+rbHdr+rbRows+'</tbody></table></div>';
-  if (wrRows) out += '<div style="margin-top:'+(rbRows?'14px':'0')+'"><div class="a-ct-season" style="margin:0 -14px 10px">WR Stats</div>'+wrHdr+wrRows+'</tbody></table></div>';
+  if (rbRows) out += '<div style="margin-bottom:0"><div class="a-ct" style="margin:0 -14px 10px">RB Stats</div>'+rbHdr+rbRows+'</tbody></table></div>';
+  if (wrRows) out += '<div style="margin-top:'+(rbRows?'14px':'0')+'"><div class="a-ct" style="margin:0 -14px 10px">WR Stats</div>'+wrHdr+wrRows+'</tbody></table></div>';
   if (!rbRows && !wrRows) out = '<div class="a-fn">No player data.</div>';
   return out;
 }
@@ -1294,7 +1294,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
     aPenaltyCard(g.plays, false)+
     '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
-    '<div style="margin-bottom:14px"><div class="a-ct-season" style="margin:0 -14px 10px">QB Stats</div>'+
+    '<div style="margin-bottom:14px"><div class="a-ct" style="margin:0 -14px 10px">QB Stats</div>'+
     '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(gPlays)+'</tbody></table></div>'+
     aPlayerStats(gPlays)+
     '</div></div>'+
@@ -1304,7 +1304,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     aPenaltyCard(allPlaysRaw, true)+
     '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
-    '<div style="margin-bottom:14px"><div class="a-ct-season" style="margin:0 -14px 10px">QB Stats</div>'+
+    '<div style="margin-bottom:14px"><div class="a-ct" style="margin:0 -14px 10px">QB Stats</div>'+
     '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(allPlays)+'</tbody></table></div>'+
     aPlayerStats(allPlays)+
     '</div></div>'+
