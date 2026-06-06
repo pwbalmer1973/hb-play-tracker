@@ -811,11 +811,11 @@ function renderLog(){
       '<td>'+p.yardline+'</td>'+
       '<td>'+p.hash.replace(' hash','')+'</td>'+
       '<td>'+p.call+ni+'</td>'+
-      '<td style="width:46px"><span class="pill '+tc+'">'+p.playtype+'</span>'+(rp?' <span class="pill '+rp+'">'+p.result+'</span>':'')+"'</td>"+
+      '<td style="width:46px"><span class="pill '+tc+'">'+p.playtype+'</span></td>'+
       '<td>'+p.defFront+'</td>'+
       '<td>'+p.coverage+'</td>'+
       '<td class="'+yc+'" style="width:38px">'+ys+'</td>'+
-      '<td>'+p.result+'</td>'+
+      '<td>'+(p.result==='O Penalty'?'<span class="pill py">O Penalty</span>':p.result)+'</td>'+
       '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
   }).join('');
@@ -1060,9 +1060,9 @@ var MONEY_FORMS = ['Money 1','Money 2','Money 3','Money 4','Money 5','Money 6'];
 
 function aGetFormation(call) {
   if (!call) return '';
-  // Money formations are always two tokens
+  // All Money formations group as "Money"
   for (var i=0; i<MONEY_FORMS.length; i++) {
-    if (call === MONEY_FORMS[i] || call.indexOf(MONEY_FORMS[i]+' ')===0) return MONEY_FORMS[i];
+    if (call === MONEY_FORMS[i] || call.indexOf(MONEY_FORMS[i]+' ')===0) return 'Money';
   }
   var parts = call.split(' ');
   // Include 'Left' suffix if present (e.g. Joker Left, Queen Left, Trips Left, Taxi Left)
@@ -1202,13 +1202,13 @@ function aPenaltyCard(plays, season) {
   return '<div class="a-card"><div class="'+ct+'">Penalties</div><div style="padding:12px 14px">'+
     '<div class="a-g2">'+
     '<div style="background:var(--color-background-secondary);border-radius:8px;padding:12px 14px">'+
-    '<div style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;background:#fff9db;color:#9a6e00;margin-bottom:10px">O Penalty</div>'+
+    '<div style="font-size:11px;font-weight:600;color:var(--color-text-primary);margin-bottom:10px">Offensive</div>'+
     '<div class="a-g2" style="margin-bottom:0">'+
     '<div class="a-stat"><div class="a-sl2">Count</div><div class="a-sv">'+oPens.length+'</div></div>'+
     '<div class="a-stat"><div class="a-sl2">Total Yds</div><div class="a-sv">'+oYds+'</div></div>'+
     '</div></div>'+
     '<div style="background:var(--color-background-secondary);border-radius:8px;padding:12px 14px">'+
-    '<div style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;background:#fff9db;color:#9a6e00;margin-bottom:10px">D Penalty</div>'+
+    '<div style="font-size:11px;font-weight:600;color:var(--color-text-primary);margin-bottom:10px">Defensive</div>'+
     '<div class="a-g2" style="margin-bottom:0">'+
     '<div class="a-stat"><div class="a-sl2">Count</div><div class="a-sv">'+dPens.length+'</div></div>'+
     '<div class="a-stat"><div class="a-sl2">Total Yds</div><div class="a-sv">'+dYds+'</div></div>'+
@@ -1217,6 +1217,8 @@ function aPenaltyCard(plays, season) {
 }
 function aRenderSummary(gPlays, allPlays, g, gameLabel) {
   gameLabel = gameLabel||'This Game';
+  var allPlaysRaw = [];
+  Object.keys(games).forEach(function(id){ allPlaysRaw = allPlaysRaw.concat(games[id].plays); });
   var el = document.getElementById('a-pane-summary');
   var conv = a3rdConv(gPlays);
   var rp = aRunPassSplit(gPlays);
@@ -1262,7 +1264,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     aRpBar(rp,false)+
     aTopFormsPlays(gPlays)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
-    aPenaltyCard(gPlays, false)+
+    aPenaltyCard(selGame.plays, false)+
     '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct">QB Stats</div><div style="padding:12px 14px">'+
@@ -1272,7 +1274,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
-    aPenaltyCard(allPlays, true)+
+    aPenaltyCard(allPlaysRaw, true)+
     '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
     '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
     '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
