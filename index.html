@@ -57,9 +57,9 @@ button{cursor:pointer;font-family:inherit}
 .bd{background:transparent;border:none;color:#ff3b30;font-size:12px;padding:4px 8px;border-radius:6px;cursor:pointer}
 .bsm{padding:5px 10px;font-size:12px}
 .lw{overflow-x:auto}
-.lt{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;min-width:600px}
+.lt{width:100%;border-collapse:collapse;font-size:11px}
 .lt th{text-align:left;font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;padding:6px 5px;border-bottom:1px solid #f0f0f5;white-space:nowrap}
-.lt td{padding:6px 5px;border-bottom:1px solid #f5f5f7;color:#1d1d1f;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lt td{padding:6px 5px;border-bottom:1px solid #f5f5f7;color:#1d1d1f;vertical-align:middle;white-space:nowrap}
 .lt tr:last-child td{border-bottom:none}
 .lt tr:hover td{background:#f0f4ff}
 .yp{color:#34c759;font-weight:600}
@@ -1166,7 +1166,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     var rows = sorted.map(function(p){
       var cg = callGroups[p.call]||[p];
       var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
-      return '<tr><td class="l">'+p.call+' '+star+'</td><td>'+cg.length+'</td><td class="a-yp">+'+p.yards+'</td></tr>';
+      return '<tr><td class="l">'+p.call+' '+star+'</td><td>'+cg.length+'</td><td>+'+p.yards+'</td></tr>';
     }).join('');
     var hasAst = sorted.some(function(p){ return aSkewed(callGroups[p.call]||[p]); });
     var title = 'Top 5 '+type+' plays';
@@ -1190,7 +1190,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
   var sQBRow = aQBRow(allPlays);
 
   el.innerHTML =
-    aSection(gameLabel) +
+    aSection(gameLabel||'This Game') +
     '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
     aRpBar(rp,false)+
     aTopFormsPlays(gPlays)+
@@ -1283,7 +1283,7 @@ function aRenderTendency(gPlays, allPlays, gameLabel) {
       '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Down</div><div style="padding:12px 14px">'+downDetail+'</div></div>';
   }
 
-  el.innerHTML = aSection(gameLabel) + summaryCard(gPlays);
+  el.innerHTML = aSection(gameLabel||'This Game') + summaryCard(gPlays);
 }
 
 function aRenderEfficiency(gPlays, allPlays, gameLabel) {
@@ -1331,7 +1331,7 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
         var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
         var front = p.defFront||'—';
         var cov = p.coverage||'—';
-        var yc = p.yards>0?'a-yp':'';
+        var yc = '';
         var ys = p.yards>0?'+'+p.yards:String(p.yards);
         var dnDist = p.down+' & '+p.dist;
         var yl = p.yardline||'—';
@@ -1355,7 +1355,7 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
       '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays by Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
   }
 
-  el.innerHTML = aSection(gameLabel) + effCards(gPlays, false, gameLabel);
+  el.innerHTML = aSection(gameLabel||'This Game') + effCards(gPlays, false, gameLabel||'This Game');
 }
 
 
@@ -1390,8 +1390,7 @@ function aRenderCritical(gPlays, allPlays, gameLabel) {
     var hasPlayAst = aTableRows(pg).some(function(r){return r.skewed;});
     // Play log
     var logRows = dp.map(function(p){
-      var yc = p.yards>0?'a-yp':p.yards<0?'style="color:#ff3b30"':'';
-      var ys = p.yards>0?'+'+p.yards:String(p.yards);
+      var yc = p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
       var dnDist = p.down+' & '+p.dist;
       return '<tr>'+
         '<td class="l">'+dnDist+'</td>'+
@@ -1425,7 +1424,7 @@ function aRenderCritical(gPlays, allPlays, gameLabel) {
   }
 
   el.innerHTML =
-    aSection(gameLabel) +
+    aSection(gameLabel||'This Game') +
     downCards(gPlays, '3rd', false) +
     downCards(gPlays, '4th', false) +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')', true) +
@@ -1520,7 +1519,7 @@ function aRenderDefense(gPlays, allPlays, gameLabel) {
   }).join('');
 
   el.innerHTML =
-    aSection(gameLabel) + defHTML(gPlays, false) +
+    aSection(gameLabel||'This Game') + defHTML(gPlays, false) +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     '<div class="a-g2">'+
     '<div class="a-card"><div class="a-ct-season">Season vs Fronts</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+sFrontRows+'</tbody></table></div></div>'+
@@ -1577,7 +1576,7 @@ function aRenderRedzone(gPlays, allPlays, gameLabel) {
     var title = tdsOnly ? 'Touchdowns' : 'All Red Zone Plays';
     if (!filtered.length) return '<div class="a-card"><div class="'+ct+'">'+title+'</div><div style="padding:12px 14px"><div class="a-fn">No plays to show.</div></div></div>';
     var rows = filtered.map(function(p){
-      var yc = p.yards>0?'a-yp':p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
+      var yc = p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
       var ys = p.yards>0?'+'+p.yards:String(p.yards);
       var dnDist = p.down+' & '+p.dist;
       return '<tr>'+
@@ -1600,7 +1599,7 @@ function aRenderRedzone(gPlays, allPlays, gameLabel) {
   var sRZ = rzPlays(allPlays);
 
   el.innerHTML =
-    aSection(gameLabel) +
+    aSection(gameLabel||'This Game') +
     (gRZ.length ? rzTopCards(gRZ,false)+rzPlayLog(gRZ,false,false)+rzPlayLog(gRZ,true,false) : '<div class="a-fn" style="padding:8px 0">No red zone plays this game.</div>') +
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
     (sRZ.length ? rzTopCards(sRZ,true)+rzPlayLog(sRZ,false,true)+rzPlayLog(sRZ,true,true) : '<div class="a-fn" style="padding:8px 0">No red zone plays this season.</div>');
