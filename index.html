@@ -815,7 +815,7 @@ function renderLog(){
       '<td>'+p.defFront+'</td>'+
       '<td>'+p.coverage+'</td>'+
       '<td class="'+yc+'" style="width:38px">'+ys+'</td>'+
-      '<td>'+(p.result==='O Penalty'?'<span class="pill py">O Penalty</span>':p.result)+'</td>'+
+      '<td style="text-align:left">'+(p.result==='O Penalty'?'<span class="pill py">O Penalty</span>':p.result)+'</td>'+
       '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
   }).join('');
@@ -1108,13 +1108,14 @@ function aIsRedZone(play) {
 }
 
 
-function aPlayerRows(plays) {
+function aPlayerStats(plays) {
+  // Build stats per player
   var pm = {};
   plays.forEach(function(p) {
     var plyr = p.player;
-    if (!plyr || plyr==='—' || plyr==='-' || plyr==='—') return;
-    var isQBRush = p.playtype==='Run' && p.qb && p.player===p.qb;
-    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,recYds:0,tgts:0,rec:0,recTDs:0,rec1D:0};
+    if (!plyr || plyr==='\u2014' || plyr==='-') return;
+    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,tgts:0,rec:0,recYds:0,recTDs:0,rec1D:0};
+    var isQBRush = (p.playtype==='Run') && p.qb && p.player===p.qb;
     if ((p.playtype==='Run'||p.playtype==='Toss') && !isQBRush) {
       pm[plyr].rushAtt++;
       pm[plyr].rushYds += p.yards;
@@ -1126,43 +1127,73 @@ function aPlayerRows(plays) {
       else if (p.result==='Incomplete') { pm[plyr].tgts++; }
       else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
       else if (p.result==='1st down') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].rec1D++; }
+      else if (p.result==='Interception') { pm[plyr].tgts++; }
     }
   });
+
   function getRosterInfo(raw) {
     if (!raw) return {num:'',name:raw||'',pos:''};
-    // Try exact match on "num name" format
     var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===raw; });
     if (r) return {num:r.num, name:r.name, pos:r.pos};
-    // Try name only
     r = ROSTER.find(function(p){ return p.name===raw; });
     if (r) return {num:r.num, name:r.name, pos:r.pos};
-    // Try num only at start (e.g. "15 Unknown")
     var parts = raw.split(' ');
-    if (parts.length>1 && !isNaN(parts[0])) {
-      return {num:parts[0], name:parts.slice(1).join(' '), pos:''};
-    }
+    if (parts.length>1 && !isNaN(parts[0])) return {num:parts[0], name:parts.slice(1).join(' '), pos:''};
     return {num:'', name:raw, pos:''};
   }
-  return Object.keys(pm).map(function(k){
-    var s = pm[k];
+
+  function d(v){ return (v!==undefined&&v!==null&&v!==0)?v:'\u2014'; }
+
+  // Build enriched player list
+  var players = Object.keys(pm).map(function(k){
     var ri = getRosterInfo(k);
-    return {name:ri.name, s:s, total:s.rushYds+s.recYds, num:ri.num, pos:ri.pos};
-  }).filter(function(r){ return r.total>0||r.s.tgts>0||r.s.rushAtt>0; })
-    .sort(function(a,b){ return b.total-a.total; })
-    .map(function(r){
-      var s = r.s;
-      var d = function(v){ return v?v:'—'; };
-      return '<tr><td class="l">'+(r.num||'—')+'</td><td class="l">'+r.name+'</td><td class="l">'+(r.pos||'—')+'</td>'+
-        '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td><td>'+d(s.rush1D)+'</td>'+
-        '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td><td>'+d(s.rec1D)+'</td></tr>';
-    }).join('');
+    return {key:k, s:pm[k], num:ri.num, name:ri.name, pos:ri.pos};
+  }).filter(function(r){ return r.s.rushAtt>0||r.s.tgts>0||r.s.recYds>0||r.s.rushYds!==0; });
+
+  var qbs  = players.filter(function(r){return r.pos==='QB';});
+  var rbs  = players.filter(function(r){return r.pos==='RB';}).sort(function(a,b){return b.s.rushYds-a.s.rushYds;});
+  var wrs  = players.filter(function(r){return r.pos==='WR';}).sort(function(a,b){return b.s.recYds-a.s.recYds;});
+  var other= players.filter(function(r){return r.pos!=='QB'&&r.pos!=='RB'&&r.pos!=='WR';});
+
+  function rbRow(r){
+    var s=r.s;
+    return '<tr><td class="l">'+r.num+'</td><td class="l">'+r.name+'</td>'+
+      '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td><td>'+d(s.rush1D)+'</td>'+
+      '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td><td>'+d(s.rec1D)+'</td></tr>';
+  }
+
+  function wrRow(r){
+    var s=r.s;
+    return '<tr><td class="l">'+r.num+'</td><td class="l">'+r.name+'</td>'+
+      '<td>'+d(s.tgts)+'</td><td>'+d(s.rec)+'</td><td>'+d(s.recYds)+'</td><td>'+d(s.recTDs)+'</td><td>'+d(s.rec1D)+'</td>'+
+      '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td></tr>';
+  }
+
+  var rbRows = rbs.concat(other).map(rbRow).join('');
+  var wrRows = wrs.map(wrRow).join('');
+
+  var rbHdr = '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th>'+
+    '<th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th>'+
+    '<th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th>'+
+    '</tr></thead><tbody>';
+
+  var wrHdr = '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th>'+
+    '<th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th>'+
+    '<th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th>'+
+    '</tr></thead><tbody>';
+
+  var out = '';
+  if (rbRows) out += '<div style="margin-bottom:0"><div class="a-ct-season" style="margin:0 -14px 10px">RB Stats</div>'+rbHdr+rbRows+'</tbody></table></div>';
+  if (wrRows) out += '<div style="margin-top:'+(rbRows?'14px':'0')+'"><div class="a-ct-season" style="margin:0 -14px 10px">WR Stats</div>'+wrHdr+wrRows+'</tbody></table></div>';
+  if (!rbRows && !wrRows) out = '<div class="a-fn">No player data.</div>';
+  return out;
 }
 
 function aQBRow(plays) {
   var qm = {};
   plays.forEach(function(p) {
     var qb = p.qb;
-    if (!qb || qb==='—' || qb==='-' || qb==='—') return;
+    if (!qb || qb==='\u2014' || qb==='-') return;
     if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
     if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
@@ -1180,10 +1211,10 @@ function aQBRow(plays) {
   });
   return Object.keys(qm).map(function(qb){
     var s = qm[qb];
-    var compPct = s.att ? Math.round(s.comp/s.att*100)+'%' : '—';
-    var d = function(v){ return v?v:'—'; };
+    var compPct = s.att ? Math.round(s.comp/s.att*100)+'%' : '\u2014';
+    var d = function(v){ return v?v:'\u2014'; };
     var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===qb || p.name===qb; });
-    var num = r ? r.num : (!isNaN((qb.split(' ')[0])) ? qb.split(' ')[0] : '—');
+    var num = r ? r.num : (!isNaN((qb.split(' ')[0])) ? qb.split(' ')[0] : '\u2014');
     var dispName = r ? r.name : (qb.split(' ').length>1 && !isNaN(qb.split(' ')[0]) ? qb.split(' ').slice(1).join(' ') : qb);
     return '<tr><td class="l">'+num+'</td><td class="l">'+dispName+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
       '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td><td>'+d(s.pass1D)+'</td>'+
@@ -1191,6 +1222,7 @@ function aQBRow(plays) {
       '<td>'+d(s.sacks)+'</td><td>'+d(s.sackYds)+'</td></tr>';
   }).join('');
 }
+
 
 
 function aPenaltyCard(plays, season) {
@@ -1245,8 +1277,6 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
       '</tbody></table>'+(hasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>';
   }
 
-  var playerRows = aPlayerRows(gPlays);
-  var qbRow = aQBRow(gPlays);
 
   // Season
   var gameCount = Object.keys(games).length;
@@ -1255,8 +1285,86 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
   var sConv = a3rdConv(allPlays);
   var srp = aRunPassSplit(allPlays);
   var sTDs = allPlays.filter(function(p){return p.result==='Touchdown';}).length;
-  var sPlayerRows = aPlayerRows(allPlays);
-  var sQBRow = aQBRow(allPlays);
+
+  el.innerHTML =
+    aSection(gameLabel||'This Game') +
+    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
+    aRpBar(rp,false)+
+    aTopFormsPlays(gPlays)+
+    '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
+    aPenaltyCard(g.plays, false)+
+    '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
+    '<div style="margin-bottom:14px"><div class="a-ct-season" style="margin:0 -14px 10px">QB Stats</div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(gPlays)+'</tbody></table></div>'+
+    aPlayerStats(gPlays)+
+    '</div></div>'+
+    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
+    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
+    aRpBar(srp,true)+
+    '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
+    aPenaltyCard(allPlaysRaw, true)+
+    '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
+    '<div style="margin-bottom:14px"><div class="a-ct-season" style="margin:0 -14px 10px">QB Stats</div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(allPlays)+'</tbody></table></div>'+
+    aPlayerStats(allPlays)+
+    '</div></div>'+
+    '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(allPlays)+'</tbody></table></div></div>';
+}
+
+
+function aTopFormsPlays(plays) {
+  var formGroups = aGroupBy(plays, function(p){ return aGetFormation(p.call); });
+  var playGroups = aGroupBy(plays, function(p){ return aGetPlay(p.call); });
+  var formRows = aTableRows(formGroups).map(function(r){
+    return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
+  }).join('');
+  var hasFormAst = aTableRows(formGroups).some(function(r){return r.skewed;});
+  var playRows = aTableRows(playGroups).map(function(r){
+    var pt = plays.find(function(p){return aGetPlay(p.call)===r.key;})||{};
+    return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
+  }).join('');
+  var hasPlayAst = aTableRows(playGroups).some(function(r){return r.skewed;});
+  return '<div class="a-g2">'+
+    '<div class="a-card"><div class="a-ct">Top Formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+    '<div class="a-card"><div class="a-ct">Top Plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
+  gameLabel = gameLabel||'This Game';
+  var allPlaysRaw = [];
+  Object.keys(games).forEach(function(id){ allPlaysRaw = allPlaysRaw.concat(games[id].plays); });
+  var el = document.getElementById('a-pane-summary');
+  var conv = a3rdConv(gPlays);
+  var rp = aRunPassSplit(gPlays);
+  var n = gPlays.length;
+  var tot = gPlays.reduce(function(s,p){return s+p.yards;},0);
+  var avg = n ? (tot/n).toFixed(1) : '—';
+  var tds = gPlays.filter(function(p){return p.result==='Touchdown';}).length;
+
+  function top5HTML(plays, type) {
+    var filtered = plays.filter(function(p){ return p.playtype===type; });
+    var callGroups = aGroupBy(filtered, function(p){return p.call;});
+    var sorted = [].concat(filtered).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
+    var seen = {};
+    var rows = sorted.map(function(p){
+      var cg = callGroups[p.call]||[p];
+      var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
+      return '<tr><td class="l">'+p.call+' '+star+'</td><td>'+cg.length+'</td><td>+'+p.yards+'</td></tr>';
+    }).join('');
+    var hasAst = sorted.some(function(p){ return aSkewed(callGroups[p.call]||[p]); });
+    var title = 'Top 5 '+type+' plays';
+    return '<div class="a-card"><div class="a-ct">'+title+'</div><div style="padding:12px 14px">'+
+      '<table class="a-tbl"><thead><tr><th class="l">Call</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+
+      (rows||'<tr><td class="l" colspan="3">No '+type.toLowerCase()+' plays</td></tr>')+
+      '</tbody></table>'+(hasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>';
+  }
+
+
+  // Season
+  var gameCount = Object.keys(games).length;
+  var sn = allPlays.length;
+  var stot = allPlays.reduce(function(s,p){return s+p.yards;},0);
+  var sConv = a3rdConv(allPlays);
+  var srp = aRunPassSplit(allPlays);
+  var sTDs = allPlays.filter(function(p){return p.result==='Touchdown';}).length;
 
   el.innerHTML =
     aSection(gameLabel||'This Game') +
