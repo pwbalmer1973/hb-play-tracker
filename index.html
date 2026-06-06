@@ -836,9 +836,11 @@ function impBackup(ev){
       var c=Object.keys(d.games).length;
       if(!confirm('Load '+c+' game(s) from backup?'))return;
       Object.keys(d.games).forEach(function(id){games[id]=d.games[id];});
-      save();updateBanner();loadScore();updateStats();renderLog();drawGames();if(typeof aInit==='function')aInit();
-      toast('Restored \u2014 '+c+' game(s) loaded');
-    }catch(e){alert('Could not read backup file.');}
+      save();
+    }catch(e){alert('Could not read backup file: '+e.message);return;}
+    try{updateBanner();loadScore();updateStats();renderLog();drawGames();}catch(e2){}
+    try{if(typeof aInit==='function')aInit();}catch(e3){}
+    toast('Restored — '+c+' game(s) loaded');
   };
   r.readAsText(file);ev.target.value='';
 }
@@ -878,15 +880,18 @@ function aInit() {
   if (!sel) return;
   sel.innerHTML = '';
   var ids = Object.keys(games).sort(function(a,b){ return b.localeCompare(a); });
+  if (!ids.length) { aRender(); return; }
+  var hasActive = gid && games[gid];
   ids.forEach(function(id) {
     var g = games[id];
     var dt = g.date ? new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'No date';
     var opt = document.createElement('option');
     opt.value = id;
-    opt.textContent = g.opponent + ' \u2014 ' + dt + (id===gid?' (active)':'');
+    opt.textContent = g.opponent + '— ' + dt + (id===gid?' (active)':'');
     if (id === gid) opt.selected = true;
     sel.appendChild(opt);
   });
+  if (!hasActive && sel.options.length) sel.selectedIndex = 0;
   aRender();
 }
 
