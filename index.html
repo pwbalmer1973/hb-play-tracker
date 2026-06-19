@@ -84,7 +84,7 @@ button{cursor:pointer;font-family:inherit}
 .toast.show{opacity:1}
 .au{animation:fl .5s ease}
 @keyframes fl{0%,100%{background:transparent}50%{background:#ddeeff}}
-@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}.a-g5{grid-template-columns:repeat(3,1fr)}}
 
 .a-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
 .a-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
@@ -95,7 +95,7 @@ button{cursor:pointer;font-family:inherit}
 .a-card{background:#fff;border:.5px solid #e5e5ea;border-radius:12px;padding:12px 14px;margin-bottom:10px;overflow:hidden}
 .a-ct{font-size:11px;font-weight:600;color:#fff;background:#1a3a8c;padding:8px 14px;margin:-12px -14px 12px}
 .a-ct-season{font-size:11px;font-weight:600;color:#fff;background:#1d1d1f;padding:8px 14px;margin:-12px -14px 12px}
-.a-g5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
+.a-g5{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px}
 .a-g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 .a-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .a-g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
@@ -1254,6 +1254,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
   Object.keys(games).forEach(function(id){ allPlaysRaw = allPlaysRaw.concat(games[id].plays); });
   var el = document.getElementById('a-pane-summary');
   var conv = a3rdConv(gPlays);
+  var turnovers = gPlays.filter(function(p){return p.result==='Fumble'||p.result==='Fumble (after catch)'||p.result==='Interception';}).length;
   var rp = aRunPassSplit(gPlays);
   var n = gPlays.length;
   var tot = gPlays.reduce(function(s,p){return s+p.yards;},0);
@@ -1284,12 +1285,13 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
   var sn = allPlays.length;
   var stot = allPlays.reduce(function(s,p){return s+p.yards;},0);
   var sConv = a3rdConv(allPlays);
+  var sTurnovers = allPlays.filter(function(p){return p.result==='Fumble'||p.result==='Fumble (after catch)'||p.result==='Interception';}).length;
   var srp = aRunPassSplit(allPlays);
   var sTDs = allPlays.filter(function(p){return p.result==='Touchdown';}).length;
 
   el.innerHTML =
     aSection(gameLabel||'This Game') +
-    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+aStatCardSm('Turnovers',turnovers)+'</div>'+
     aRpBar(rp,false)+
     aTopFormsPlays(gPlays)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
@@ -1300,7 +1302,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     aPlayerStats(gPlays)+
     '</div></div>'+
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
-    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+aStatCardSm('Turnovers',sTurnovers)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     aPenaltyCard(allPlaysRaw, true)+
@@ -1334,6 +1336,7 @@ function aTopFormsPlays(plays) {
   Object.keys(games).forEach(function(id){ allPlaysRaw = allPlaysRaw.concat(games[id].plays); });
   var el = document.getElementById('a-pane-summary');
   var conv = a3rdConv(gPlays);
+  var turnovers = gPlays.filter(function(p){return p.result==='Fumble'||p.result==='Fumble (after catch)'||p.result==='Interception';}).length;
   var rp = aRunPassSplit(gPlays);
   var n = gPlays.length;
   var tot = gPlays.reduce(function(s,p){return s+p.yards;},0);
@@ -1364,12 +1367,13 @@ function aTopFormsPlays(plays) {
   var sn = allPlays.length;
   var stot = allPlays.reduce(function(s,p){return s+p.yards;},0);
   var sConv = a3rdConv(allPlays);
+  var sTurnovers = allPlays.filter(function(p){return p.result==='Fumble'||p.result==='Fumble (after catch)'||p.result==='Interception';}).length;
   var srp = aRunPassSplit(allPlays);
   var sTDs = allPlays.filter(function(p){return p.result==='Touchdown';}).length;
 
   el.innerHTML =
     aSection(gameLabel||'This Game') +
-    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+aStatCardSm('Turnovers',turnovers)+'</div>'+
     aRpBar(rp,false)+
     aTopFormsPlays(gPlays)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
@@ -1380,7 +1384,7 @@ function aTopFormsPlays(plays) {
     '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
-    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+aStatCardSm('Turnovers',sTurnovers)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     aPenaltyCard(allPlaysRaw, true)+
