@@ -264,6 +264,7 @@ button{cursor:pointer;font-family:inherit}
           <option value="Loss">Loss</option>
           <option value="Completion">Completion</option>
           <option value="Fumble">Fumble</option>
+          <option value="Fumble (after catch)">Fumble (after catch)</option>
           <option value="Incomplete">Incomplete</option>
           <option value="Interception">Interception</option>
           <option value="1st down">1st down</option>
@@ -370,7 +371,7 @@ var PTM={'Alaska':'Run','American':'Run','Badger':'Run','Bear':'Run','Blood':'Ru
 var FTM={'Money 1':'Pass','Money 2':'Run','Money 3':'Pass','Money 4':'Pass','Money 5':'Run','Money 6':'Pass'};
 var TC={Run:'pr',Pass:'pp',Toss:'pt'};
 var DOWNS=['1st','2nd','3rd','4th'];
-var PC=['Touchdown','Fumble','Interception','Turnover on downs'];
+var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs'];
 var NA=['Incomplete','D Penalty'];
 var ROSTER=[
   {num:'15',name:'Stevie Neibel',pos:'QB'},
@@ -1123,7 +1124,7 @@ function aPlayerStats(plays) {
       if (p.result==='1st down') pm[plyr].rush1D++;
     }
     if (p.playtype==='Pass'||p.playtype==='Toss') {
-      if (p.result==='Completion') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
+      if (p.result==='Completion'||p.result==='Fumble (after catch)') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
       else if (p.result==='Incomplete') { pm[plyr].tgts++; }
       else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
       else if (p.result==='1st down') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].rec1D++; }
@@ -1196,7 +1197,7 @@ function aQBRow(plays) {
     if (!qb || qb==='\u2014' || qb==='-') return;
     if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
     if (p.playtype==='Pass'||p.playtype==='Toss') {
-      if (p.result==='Completion') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
+      if (p.result==='Completion'||p.result==='Fumble (after catch)') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
       else if (p.result==='Incomplete') { qm[qb].att++; }
       else if (p.result==='Interception') { qm[qb].att++; }
       else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
