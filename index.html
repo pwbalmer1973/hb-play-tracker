@@ -175,6 +175,7 @@ button{cursor:pointer;font-family:inherit}
     <div style="display:flex;gap:6px">
       <button class="bs bsm" onclick="openGameModal()">New game</button>
       <button class="bs bsm" onclick="showTab('games')">Switch game</button>
+      <button class="bs bsm" id="halftime-btn" onclick="halftimeSnapshot()" style="display:none">Halftime</button>
       <button class="bs bsm" id="game-over-btn" onclick="gameOver()" style="display:none">Game Over</button>
     </div>
   </div>
@@ -394,13 +395,13 @@ var DOWNS=['1st','2nd','3rd','4th'];
 var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs'];
 var NA=['Incomplete','D Penalty'];
 var ROSTER=[
-  {num:'15',name:'Stevie Neibel',pos:'QB'},
-  {num:'25',name:'Nate Fauteux',pos:'QB'},
-  {num:'2',name:'Thurston Balmer',pos:'WR'},
-  {num:'23',name:'Cole Duncan',pos:'WR'},
-  {num:'20',name:'Braylon Cudworth',pos:'WR'},
-  {num:'4',name:'Ben York',pos:'RB'},
-  {num:'35',name:'Matthew Souza',pos:'RB'}
+  {num:'15',name:'Stevie Neibel',pos:'QB',receiverType:''},
+  {num:'25',name:'Nate Fauteux',pos:'QB',receiverType:''},
+  {num:'2',name:'Thurston Balmer',pos:'WR',receiverType:'X'},
+  {num:'23',name:'Cole Duncan',pos:'WR',receiverType:'Z'},
+  {num:'20',name:'Braylon Cudworth',pos:'WR',receiverType:'Y'},
+  {num:'4',name:'Ben York',pos:'RB',receiverType:'A'},
+  {num:'35',name:'Matthew Souza',pos:'RB',receiverType:'B'}
 ];
 var QB_ROSTER=ROSTER.filter(function(p){return p.pos==='QB';});
 var DFRONTS=['3-4','4-3'];
@@ -590,13 +591,16 @@ function updateStats(){
 function updateBanner(){
   var el=document.getElementById('gname');
   var btn=document.getElementById('game-over-btn');
+  var hbtn=document.getElementById('halftime-btn');
   if(gid&&games[gid]){
     var g=games[gid],dt=g.date?new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
     el.textContent=g.opponent+(dt?' — '+dt:'');
     if(btn) btn.style.display='block';
+    if(hbtn) hbtn.style.display='block';
   }else{
     el.textContent='No game selected';
     if(btn) btn.style.display='none';
+    if(hbtn) hbtn.style.display='none';
   }
 }
 
@@ -1071,7 +1075,7 @@ function applyPlaybookRestore() {
 }
 
 function rosterExportCSV() {
-  var csv = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos; }).join('\n');
+  var csv = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos+','+(p.receiverType||''); }).join('\n');
   var a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
   a.download = 'HB_Roster.csv';
@@ -1085,8 +1089,8 @@ function rosterImportFromTextarea() {
   var newRoster = [];
   for (var i=0; i<lines.length; i++) {
     var parts = lines[i].split(',').map(function(p){return p.trim();});
-    if (parts.length < 3) { alert('Line '+(i+1)+' is invalid. Expected: number,name,position'); return; }
-    newRoster.push({num:parts[0], name:parts[1], pos:parts[2]});
+    if (parts.length < 3) { alert('Line '+(i+1)+' is invalid. Expected: number,name,position,receiver type (receiver type optional)'); return; }
+    newRoster.push({num:parts[0], name:parts[1], pos:parts[2], receiverType:parts[3]||''});
   }
   if (!newRoster.length) { alert('No valid roster rows found.'); return; }
   if (!confirm('Replace current roster with '+newRoster.length+' players?')) return;
@@ -1153,7 +1157,7 @@ function rebuildDefDropdowns() {
 
 function gmRenderSetup() {
   var el = document.getElementById('gm-pane-setup');
-  var rosterCSV = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos; }).join('\n');
+  var rosterCSV = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos+','+(p.receiverType||''); }).join('\n');
   var frontsTxt = DFRONTS.join('\n');
   var covsTxt = COVS.join('\n');
   var formsTxt = selectListText('form');
@@ -1192,7 +1196,7 @@ function gmRenderSetup() {
     '</div></div></div>' +
 
     '<div class="card"><div class="ct">Roster</div><div style="padding:12px 14px">' +
-    '<div class="bkn" style="margin-bottom:10px">CSV format: number,name,position (one player per line, no header)</div>' +
+    '<div class="bkn" style="margin-bottom:10px">CSV format: number,name,position,receiver type (one player per line, no header). Receiver type is A/X/Y/Z/B, optional, used by Sauce for play suggestions.</div>' +
     '<textarea id="roster-csv" rows="8" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+rosterCSV+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
     '<button class="bp" onclick="rosterImportFromTextarea()">Import Roster</button>' +
@@ -1226,17 +1230,14 @@ function gmRenderSetup() {
 
 function gmRenderAfter() {
   var el = document.getElementById('gm-pane-after');
-  var hasActive = gid && games[gid];
   el.innerHTML =
-    '<div class="card"><div class="ct">Halftime Snapshot</div><div style="padding:12px 14px">' +
-    '<div class="bkn" style="margin-bottom:10px">Exports a full backup of all games, tagged with the active game and today\'s date. Use this at halftime as a safety checkpoint.</div>' +
-    (hasActive ?
-      '<button class="bp" onclick="halftimeSnapshot()">&#8595; Export Halftime Snapshot</button>' :
-      '<button class="bp" disabled style="opacity:.5;cursor:not-allowed">&#8595; Export Halftime Snapshot</button><div class="bkn" style="margin-top:8px">No active game selected.</div>'
-    ) +
+    '<div class="card"><div class="ct">Email Game Summary</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">Send a pre-formatted box score and game summary via email. Format and recipients to be defined.</div>' +
+    '<button class="bs" disabled style="opacity:.5;cursor:not-allowed" onclick="toast(&#39;Email game summary coming soon&#39;)">&#9993; Email Game Summary (coming soon)</button>' +
     '</div></div>' +
-    '<div class="card"><div class="ct">Auto-Save on Game Over</div><div style="padding:12px 14px">' +
-    '<div class="es">A full backup automatically exports every time you click Game Over &#8212; no extra steps needed.</div>' +
+    '<div class="card"><div class="ct">Export HUDL Data</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">Export logged plays in a format HUDL can import for film tagging. Format to be defined.</div>' +
+    '<button class="bs" disabled style="opacity:.5;cursor:not-allowed" onclick="toast(&#39;HUDL export coming soon&#39;)">&#8593; Export HUDL Data (coming soon)</button>' +
     '</div></div>';
 }
 
