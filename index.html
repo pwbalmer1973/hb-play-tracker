@@ -327,8 +327,13 @@ button{cursor:pointer;font-family:inherit}
     </div>
     <div class="card">
       <div class="ct">New game</div>
-      <div class="r3">
-        <div class="fg"><label class="fl">Opponent</label><input type="text" id="nopp" placeholder="e.g. Concord High"></div>
+      <div class="r4">
+        <div class="fg"><label class="fl">Opponent</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="nopp" placeholder="e.g. Concord High" oninput="onOpponentInput('nopp','nopp-list')" onblur="hideAutocomplete('nopp-list')" autocomplete="off">
+            <div class="autocomplete-list" id="nopp-list"></div>
+          </div></div>
+        <div class="fg"><label class="fl">Home/Away</label><select id="nhomeaway"><option value="home">Home (vs.)</option><option value="away">Away (@)</option></select></div>
         <div class="fg"><label class="fl">Date</label><input type="date" id="ndate"></div>
         <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="newGame()" style="width:100%">Create game</button></div>
       </div>
@@ -373,7 +378,14 @@ button{cursor:pointer;font-family:inherit}
     <div class="modal-title">New Game</div>
     <div class="modal-row">
       <label class="modal-label">Opponent</label>
-      <input type="text" id="modal-opp" placeholder="e.g. Concord High">
+      <div class="autocomplete-wrap">
+        <input type="text" id="modal-opp" placeholder="e.g. Concord High" oninput="onOpponentInput('modal-opp','modal-opp-list')" onblur="hideAutocomplete('modal-opp-list')" autocomplete="off">
+        <div class="autocomplete-list" id="modal-opp-list"></div>
+      </div>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Home/Away</label>
+      <select id="modal-homeaway"><option value="home">Home (vs.)</option><option value="away">Away (@)</option></select>
     </div>
     <div class="modal-row">
       <label class="modal-label">Date</label>
@@ -406,11 +418,13 @@ var ROSTER=[
 var QB_ROSTER=ROSTER.filter(function(p){return p.pos==='QB';});
 var DFRONTS=['3-4','4-3'];
 var COVS=['Cover 0','Cover 3'];
+var OPPONENTS=[];
 (function(){
   try {
     var sr=localStorage.getItem('hbRoster'); if(sr){var pr=JSON.parse(sr); if(pr&&pr.length){ROSTER.length=0;pr.forEach(function(p){ROSTER.push(p);});}}
     var sdf=localStorage.getItem('hbDFronts'); if(sdf){var pdf=JSON.parse(sdf); if(pdf&&pdf.length){DFRONTS.length=0;pdf.forEach(function(f){DFRONTS.push(f);});}}
     var sco=localStorage.getItem('hbCovs'); if(sco){var pco=JSON.parse(sco); if(pco&&pco.length){COVS.length=0;pco.forEach(function(c){COVS.push(c);});}}
+    var sop=localStorage.getItem('hbOpponents'); if(sop){var pop=JSON.parse(sop); if(pop&&pop.length){OPPONENTS.length=0;pop.forEach(function(o){OPPONENTS.push(o);});}}
   } catch(e){}
 })();
 
@@ -443,6 +457,40 @@ function pickPlayer(el){
 
 function hideAutocomplete(listId){
   setTimeout(function(){document.getElementById(listId).classList.remove('show');},200);
+}
+
+function opponentMatch(query){
+  if(!query) return [];
+  var q=query.toLowerCase();
+  return OPPONENTS.filter(function(o){
+    return o.name.toLowerCase().indexOf(q)>=0;
+  });
+}
+
+function showOpponentAutocomplete(inputId,listId,matches){
+  var list=document.getElementById(listId);
+  if(!matches.length){list.classList.remove('show');return;}
+  list.innerHTML=matches.map(function(o){
+    return '<div class="autocomplete-item" onmousedown="pickOpponent(this)" data-input="'+inputId+'" data-list="'+listId+'" data-val="'+o.name+'" data-homeaway="'+(o.homeAway||'')+'">'+o.name+' <span style="color:#6e6e73;font-size:11px">'+(o.homeAway==='away'?'@':'vs.')+'</span></div>';
+  }).join('');
+  list.classList.add('show');
+}
+
+function pickOpponent(el){
+  var inputId=el.getAttribute('data-input');
+  var listId=el.getAttribute('data-list');
+  var val=el.getAttribute('data-val');
+  var homeAway=el.getAttribute('data-homeaway');
+  document.getElementById(inputId).value=val;
+  document.getElementById(listId).classList.remove('show');
+  var haSelectId = (inputId==='modal-opp') ? 'modal-homeaway' : 'nhomeaway';
+  var haSel=document.getElementById(haSelectId);
+  if(haSel && homeAway){ haSel.value=homeAway; }
+}
+
+function onOpponentInput(inputId,listId){
+  var q=document.getElementById(inputId).value;
+  showOpponentAutocomplete(inputId,listId,opponentMatch(q));
 }
 
 function onQBInput(){
@@ -594,7 +642,8 @@ function updateBanner(){
   var hbtn=document.getElementById('halftime-btn');
   if(gid&&games[gid]){
     var g=games[gid],dt=g.date?new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-    el.textContent=g.opponent+(dt?' — '+dt:'');
+    var prefix=g.homeAway==='away'?'@ ':'vs. ';
+    el.textContent=prefix+g.opponent+(dt?' — '+dt:'');
     if(btn) btn.style.display='block';
     if(hbtn) hbtn.style.display='block';
   }else{
@@ -785,6 +834,7 @@ function cancelEdit(){
 
 function openGameModal(){
   document.getElementById('modal-opp').value='';
+  document.getElementById('modal-homeaway').value='home';
   document.getElementById('modal-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('new-game-modal').classList.add('show');
   setTimeout(function(){ document.getElementById('modal-opp').focus(); }, 100);
@@ -794,12 +844,13 @@ function closeGameModal(){
 }
 function createGameFromModal(){
   var opp=document.getElementById('modal-opp').value.trim();
+  var ha=document.getElementById('modal-homeaway').value||'home';
   var dt=document.getElementById('modal-date').value;
   if(!opp){ document.getElementById('modal-opp').focus(); return; }
   var id='g'+Date.now();
-  games[id]={id:id,opponent:opp,date:dt,plays:[],scoreUs:0,scoreThem:0};
+  games[id]={id:id,opponent:opp,homeAway:ha,date:dt,plays:[],scoreUs:0,scoreThem:0};
   save(); setGame(id); closeGameModal();
-  toast('Game vs '+opp+' started!');
+  toast('Game '+(ha==='away'?'@ ':'vs. ')+opp+' started!');
 }
 function logPlay(){
   if(!gid){alert('Please create or select a game first.');showTab('games');return;}
@@ -883,10 +934,11 @@ function renderLog(){
 
 function newGame(){
   var opp=document.getElementById('nopp').value.trim();
+  var ha=document.getElementById('nhomeaway').value||'home';
   var dt=document.getElementById('ndate').value;
   if(!opp){document.getElementById('nopp').focus();return;}
   var id='g'+Date.now();
-  games[id]={id:id,opponent:opp,date:dt,plays:[],scoreUs:0,scoreThem:0};
+  games[id]={id:id,opponent:opp,homeAway:ha,date:dt,plays:[],scoreUs:0,scoreThem:0};
   save();setGame(id);document.getElementById('nopp').value='';showTab('log');
 }
 function setGame(id){
@@ -905,9 +957,10 @@ function drawGames(){
   el.innerHTML=ids.map(function(id){
     var g=games[id],active=id===gid;
     var dt=g.date?new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'No date';
+    var prefix=g.homeAway==='away'?'@ ':'vs. ';
     return '<div class="gi'+(active?' ag':'')+'">'+
       '<div onclick="setGame(\''+id+'\');showTab(\'log\')" style="flex:1;cursor:pointer">'+
-      '<div class="gn">'+g.opponent+(active?' <span style="font-size:10px;color:#6e6e73">(active)</span>':'')+'</div>'+
+      '<div class="gn">'+prefix+g.opponent+(active?' <span style="font-size:10px;color:#6e6e73">(active)</span>':'')+'</div>'+
       '<div class="gm">'+dt+' &middot; '+g.plays.length+' plays &middot; '+(g.scoreUs||0)+'&ndash;'+(g.scoreThem||0)+'</div></div>'+
       '<div class="ga">'+
       '<button class="bs bsm" onclick="expGame(\''+id+'\')">Export</button>'+
@@ -1144,6 +1197,34 @@ function covsImportFromTextarea() {
   toast('Coverages updated');
 }
 
+function opponentsExportCSV() {
+  var csv = OPPONENTS.map(function(o){ return o.name+','+(o.homeAway||'home'); }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Opponents.csv';
+  a.click();
+  toast('Opponents exported');
+}
+
+function opponentsImportFromTextarea() {
+  var raw = document.getElementById('opponents-csv').value;
+  var lines = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var newOpponents = [];
+  for (var i=0; i<lines.length; i++) {
+    var parts = lines[i].split(',').map(function(p){return p.trim();});
+    if (!parts[0]) { alert('Line '+(i+1)+' is invalid. Expected: opponent,home/away'); return; }
+    var ha = (parts[1]||'home').toLowerCase();
+    if (ha!=='home' && ha!=='away') ha='home';
+    newOpponents.push({name:parts[0], homeAway:ha});
+  }
+  if (!newOpponents.length) { alert('No valid opponent rows found.'); return; }
+  if (!confirm('Replace current opponents list with '+newOpponents.length+' entries?')) return;
+  OPPONENTS.length = 0;
+  newOpponents.forEach(function(o){ OPPONENTS.push(o); });
+  try { localStorage.setItem('hbOpponents', JSON.stringify(OPPONENTS)); } catch(e){}
+  toast('Opponents updated \u2014 '+newOpponents.length+' entries');
+}
+
 function rebuildDefDropdowns() {
   var dfSel = document.getElementById('dfront');
   var covSel = document.getElementById('cov');
@@ -1164,6 +1245,7 @@ function gmRenderSetup() {
   var motsTxt = selectListText('mot');
   var holesTxt = selectListText('hole');
   var playsTxt = selectListText('play');
+  var opponentsTxt = OPPONENTS.map(function(o){ return o.name+','+(o.homeAway||'home'); }).join('\n');
 
   el.innerHTML =
     '<div class="card"><div class="ct">Playbook</div><div style="padding:12px 14px">' +
@@ -1181,7 +1263,7 @@ function gmRenderSetup() {
     '<button class="bp" onclick="motsImportFromTextarea()">Import</button>' +
     '<button class="bs" onclick="motsExportCSV()">&#8595; Export</button>' +
     '</div></div>' +
-    '<div><div class="fl" style="margin-bottom:6px">Holes</div>' +
+    '<div><div class="fl" style="margin-bottom:6px">Protection/Hole</div>' +
     '<textarea id="holes-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+holesTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
     '<button class="bp" onclick="holesImportFromTextarea()">Import</button>' +
@@ -1220,6 +1302,14 @@ function gmRenderSetup() {
     '</div></div>' +
     '</div></div></div>' +
 
+    '<div class="card"><div class="ct">Opponents</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">CSV format: opponent,home/away (one per line, no header). Preload your full season schedule here &#8212; this list powers the autocomplete in New Game and keeps opponent names consistent for HUDL scouting import matching.</div>' +
+    '<textarea id="opponents-csv" rows="8" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+opponentsTxt+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="opponentsImportFromTextarea()">Import Opponents</button>' +
+    '<button class="bs" onclick="opponentsExportCSV()">&#8595; Export Opponents CSV</button>' +
+    '</div></div></div>' +
+
     '<div class="card"><div class="ct">HUDL Scouting Import</div><div style="padding:12px 14px">' +
     '<div class="bkn" style="margin-bottom:10px">Import opponent scouting data exported from HUDL. Format to be defined.</div>' +
     '<button class="bs" disabled style="opacity:.5;cursor:not-allowed" onclick="toast(&#39;HUDL import coming soon&#39;)">&#8593; Import HUDL Scouting Report (coming soon)</button>' +
@@ -1254,7 +1344,8 @@ function aInit() {
     var dt = g.date ? new Date(g.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'No date';
     var opt = document.createElement('option');
     opt.value = id;
-    opt.textContent = g.opponent + '— ' + dt + (id===gid?' (active)':'');
+    var prefix = g.homeAway==='away' ? '@ ' : 'vs. ';
+    opt.textContent = prefix + g.opponent + '— ' + dt + (id===gid?' (active)':'');
     if (id === gid) opt.selected = true;
     sel.appendChild(opt);
   });
@@ -1285,7 +1376,7 @@ function aRender() {
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var gameLabel='This Game';
   if(selGame.opponent){
-    gameLabel='HB vs. '+selGame.opponent;
+    gameLabel='HB '+(selGame.homeAway==='away'?'@ ':'vs. ')+selGame.opponent;
     if(selGame.date){
       var gd=new Date(selGame.date+'T00:00:00');
       gameLabel+=' — '+DAYS[gd.getDay()]+', '+MONTHS[gd.getMonth()]+' '+gd.getDate()+', '+gd.getFullYear();
