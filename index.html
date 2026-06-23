@@ -993,6 +993,18 @@ function impBackup(ev){
   r.readAsText(file);ev.target.value='';
 }
 
+function handleCSVFileImport(ev, textareaId, saveFnName){
+  var file=ev.target.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var ta=document.getElementById(textareaId);
+    if(!ta){ev.target.value='';return;}
+    ta.value=e.target.result;
+    if(typeof window[saveFnName]==='function') window[saveFnName]();
+  };
+  r.readAsText(file);ev.target.value='';
+}
+
 function doExport(){if(gid)expGame(gid);}
 function expGame(id){
   var g=games[id];if(!g||!g.plays.length)return;
@@ -1046,14 +1058,6 @@ function rebuildSelectFromList(id, items) {
   sel.innerHTML = '<option value="">\u2014</option>' + items.map(function(v){return '<option>'+v+'</option>';}).join('');
 }
 
-function formsExportCSV() {
-  var csv = selectListText('form');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Formations.csv';
-  a.click();
-  toast('Formations exported');
-}
 function formsImportFromTextarea() {
   var raw = document.getElementById('forms-csv').value;
   var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
@@ -1064,14 +1068,6 @@ function formsImportFromTextarea() {
   toast('Formations updated');
 }
 
-function motsExportCSV() {
-  var csv = selectListText('mot');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Motions.csv';
-  a.click();
-  toast('Motions exported');
-}
 function motsImportFromTextarea() {
   var raw = document.getElementById('mots-csv').value;
   var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
@@ -1082,14 +1078,6 @@ function motsImportFromTextarea() {
   toast('Motions updated');
 }
 
-function holesExportCSV() {
-  var csv = selectListText('hole');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Holes.csv';
-  a.click();
-  toast('Holes exported');
-}
 function holesImportFromTextarea() {
   var raw = document.getElementById('holes-csv').value;
   var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
@@ -1100,14 +1088,6 @@ function holesImportFromTextarea() {
   toast('Holes updated');
 }
 
-function playsExportCSV() {
-  var csv = selectListText('play');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Plays.csv';
-  a.click();
-  toast('Plays exported');
-}
 function playsImportFromTextarea() {
   var raw = document.getElementById('plays-csv').value;
   var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
@@ -1125,15 +1105,6 @@ function applyPlaybookRestore() {
     var h = localStorage.getItem('hbHoles'); if (h) { var hl = JSON.parse(h); if (hl && hl.length) rebuildSelectFromList('hole', hl); }
     var p = localStorage.getItem('hbPlays'); if (p) { var pl = JSON.parse(p); if (pl && pl.length) rebuildSelectFromList('play', pl); }
   } catch(e){}
-}
-
-function rosterExportCSV() {
-  var csv = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos+','+(p.receiverType||''); }).join('\n');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Roster.csv';
-  a.click();
-  toast('Roster exported');
 }
 
 function rosterImportFromTextarea() {
@@ -1155,15 +1126,6 @@ function rosterImportFromTextarea() {
   toast('Roster updated \u2014 '+newRoster.length+' players');
 }
 
-function frontsExportCSV() {
-  var csv = DFRONTS.join('\n');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Defensive_Fronts.csv';
-  a.click();
-  toast('Fronts exported');
-}
-
 function frontsImportFromTextarea() {
   var raw = document.getElementById('fronts-csv').value;
   var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
@@ -1176,15 +1138,6 @@ function frontsImportFromTextarea() {
   toast('Fronts updated');
 }
 
-function covsExportCSV() {
-  var csv = COVS.join('\n');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Coverages.csv';
-  a.click();
-  toast('Coverages exported');
-}
-
 function covsImportFromTextarea() {
   var raw = document.getElementById('covs-csv').value;
   var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
@@ -1195,15 +1148,6 @@ function covsImportFromTextarea() {
   rebuildDefDropdowns();
   try { localStorage.setItem('hbCovs', JSON.stringify(COVS)); } catch(e){}
   toast('Coverages updated');
-}
-
-function opponentsExportCSV() {
-  var csv = OPPONENTS.map(function(o){ return o.name+','+(o.homeAway||'home'); }).join('\n');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'HB_Opponents.csv';
-  a.click();
-  toast('Opponents exported');
 }
 
 function opponentsImportFromTextarea() {
@@ -1254,26 +1198,30 @@ function gmRenderSetup() {
     '<div><div class="fl" style="margin-bottom:6px">Formations</div>' +
     '<textarea id="forms-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+formsTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="formsImportFromTextarea()">Import</button>' +
-    '<button class="bs" onclick="formsExportCSV()">&#8595; Export</button>' +
+    '<button class="bp" onclick="formsImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;forms-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="forms-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;forms-csv&#39;,&#39;formsImportFromTextarea&#39;)">' +
     '</div></div>' +
     '<div><div class="fl" style="margin-bottom:6px">Motions</div>' +
     '<textarea id="mots-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+motsTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="motsImportFromTextarea()">Import</button>' +
-    '<button class="bs" onclick="motsExportCSV()">&#8595; Export</button>' +
+    '<button class="bp" onclick="motsImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;mots-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="mots-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;mots-csv&#39;,&#39;motsImportFromTextarea&#39;)">' +
     '</div></div>' +
     '<div><div class="fl" style="margin-bottom:6px">Protection/Hole</div>' +
     '<textarea id="holes-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+holesTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="holesImportFromTextarea()">Import</button>' +
-    '<button class="bs" onclick="holesExportCSV()">&#8595; Export</button>' +
+    '<button class="bp" onclick="holesImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;holes-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="holes-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;holes-csv&#39;,&#39;holesImportFromTextarea&#39;)">' +
     '</div></div>' +
     '<div><div class="fl" style="margin-bottom:6px">Plays</div>' +
     '<textarea id="plays-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+playsTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="playsImportFromTextarea()">Import</button>' +
-    '<button class="bs" onclick="playsExportCSV()">&#8595; Export</button>' +
+    '<button class="bp" onclick="playsImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;plays-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="plays-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;plays-csv&#39;,&#39;playsImportFromTextarea&#39;)">' +
     '</div></div>' +
     '</div></div></div>' +
 
@@ -1281,8 +1229,9 @@ function gmRenderSetup() {
     '<div class="bkn" style="margin-bottom:10px">CSV format: number,name,position,receiver type (one player per line, no header). Receiver type is A/X/Y/Z/B, optional, used by Sauce for play suggestions.</div>' +
     '<textarea id="roster-csv" rows="8" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+rosterCSV+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="rosterImportFromTextarea()">Import Roster</button>' +
-    '<button class="bs" onclick="rosterExportCSV()">&#8595; Export Roster CSV</button>' +
+    '<button class="bp" onclick="rosterImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;roster-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="roster-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;roster-csv&#39;,&#39;rosterImportFromTextarea&#39;)">' +
     '</div></div></div>' +
 
     '<div class="card"><div class="ct">Defensive Fronts &amp; Coverages</div><div style="padding:12px 14px">' +
@@ -1291,14 +1240,16 @@ function gmRenderSetup() {
     '<div><div class="fl" style="margin-bottom:6px">Defensive Fronts</div>' +
     '<textarea id="fronts-csv" rows="6" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+frontsTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="frontsImportFromTextarea()">Import Fronts</button>' +
-    '<button class="bs" onclick="frontsExportCSV()">&#8595; Export</button>' +
+    '<button class="bp" onclick="frontsImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;fronts-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="fronts-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;fronts-csv&#39;,&#39;frontsImportFromTextarea&#39;)">' +
     '</div></div>' +
     '<div><div class="fl" style="margin-bottom:6px">Coverages</div>' +
     '<textarea id="covs-csv" rows="6" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+covsTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="covsImportFromTextarea()">Import Coverages</button>' +
-    '<button class="bs" onclick="covsExportCSV()">&#8595; Export</button>' +
+    '<button class="bp" onclick="covsImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;covs-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="covs-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;covs-csv&#39;,&#39;covsImportFromTextarea&#39;)">' +
     '</div></div>' +
     '</div></div></div>' +
 
@@ -1306,8 +1257,9 @@ function gmRenderSetup() {
     '<div class="bkn" style="margin-bottom:10px">CSV format: opponent,home/away (one per line, no header). Preload your full season schedule here &#8212; this list powers the autocomplete in New Game and keeps opponent names consistent for HUDL scouting import matching.</div>' +
     '<textarea id="opponents-csv" rows="8" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+opponentsTxt+'</textarea>' +
     '<div class="brow" style="margin-top:10px">' +
-    '<button class="bp" onclick="opponentsImportFromTextarea()">Import Opponents</button>' +
-    '<button class="bs" onclick="opponentsExportCSV()">&#8595; Export Opponents CSV</button>' +
+    '<button class="bp" onclick="opponentsImportFromTextarea()">Save</button>' +
+    '<button class="bs" onclick="document.getElementById(&#39;opponents-file&#39;).click()">&#8593; Import</button>' +
+    '<input type="file" id="opponents-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFileImport(event,&#39;opponents-csv&#39;,&#39;opponentsImportFromTextarea&#39;)">' +
     '</div></div></div>' +
 
     '<div class="card"><div class="ct">HUDL Scouting Import</div><div style="padding:12px 14px">' +
