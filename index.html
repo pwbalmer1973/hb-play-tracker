@@ -84,7 +84,7 @@ button{cursor:pointer;font-family:inherit}
 .toast.show{opacity:1}
 .au{animation:fl .5s ease}
 @keyframes fl{0%,100%{background:transparent}50%{background:#ddeeff}}
-@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}.a-g5{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}.a-g5{grid-template-columns:repeat(3,1fr)}.a-g4{grid-template-columns:repeat(2,1fr)}}
 
 .a-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
 .a-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
@@ -147,6 +147,11 @@ button{cursor:pointer;font-family:inherit}
 .modal-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .modal-label{font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.06em}
 .modal-btns{display:flex;gap:8px;margin-top:16px}
+
+.gm-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
+.gm-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
+.gm-pane{display:none}
+.gm-pane.active{display:block}
 </style>
 </head>
 <body>
@@ -160,7 +165,7 @@ button{cursor:pointer;font-family:inherit}
   <div class="tabs">
     <button class="tab active" onclick="showTab('log')">Play Tracker</button>
     <button class="tab" onclick="showTab('analytics')">Analytics</button>
-    <button class="tab" onclick="showTab('games')">Games</button>
+    <button class="tab" onclick="showTab('games')">Game Manager</button>
   </div>
 </div>
 
@@ -301,27 +306,42 @@ button{cursor:pointer;font-family:inherit}
 </div>
 
 <div id="pane-games" class="pane">
-  <div class="bksec">
-    <div class="bkt">&#128190; Backup &amp; Restore</div>
-    <div class="brow">
-      <button class="bp" onclick="expBackup()">&#8595; Export backup</button>
-      <button class="bs" onclick="document.getElementById('impfile').click()">&#8593; Import backup</button>
-      <input type="file" id="impfile" accept=".json" style="display:none" onchange="impBackup(event)">
-    </div>
-    <div class="bkn">Export saves all your games as a JSON file. Import restores from that file.</div>
-  </div>
-  <div class="card">
-    <div class="ct">New game</div>
-    <div class="r3">
-      <div class="fg"><label class="fl">Opponent</label><input type="text" id="nopp" placeholder="e.g. Concord High"></div>
-      <div class="fg"><label class="fl">Date</label><input type="date" id="ndate"></div>
-      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="newGame()" style="width:100%">Create game</button></div>
+  <div style="background:var(--color-background-primary);padding:10px 14px;border-bottom:.5px solid var(--color-border-tertiary);margin:0 -16px 12px">
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="gm-stab active" onclick="gmTab('games',this)">Games</button>
+      <button class="gm-stab" onclick="gmTab('setup',this)">Setup</button>
+      <button class="gm-stab" onclick="gmTab('after',this)">After the Game</button>
     </div>
   </div>
-  <div class="card">
-    <div class="ct">Saved games</div>
-    <div id="gamelist"><div class="es">No games yet &#8212; create one above.</div></div>
+
+  <div id="gm-pane-games" class="gm-pane active">
+    <div class="bksec">
+      <div class="bkt">&#128190; Backup &amp; Restore</div>
+      <div class="brow">
+        <button class="bp" onclick="expBackup()">&#8595; Export backup</button>
+        <button class="bs" onclick="document.getElementById('impfile').click()">&#8593; Import backup</button>
+        <input type="file" id="impfile" accept=".json" style="display:none" onchange="impBackup(event)">
+      </div>
+      <div class="bkn">Export saves all your games as a JSON file. Import restores from that file.</div>
+    </div>
+    <div class="card">
+      <div class="ct">New game</div>
+      <div class="r3">
+        <div class="fg"><label class="fl">Opponent</label><input type="text" id="nopp" placeholder="e.g. Concord High"></div>
+        <div class="fg"><label class="fl">Date</label><input type="date" id="ndate"></div>
+        <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="newGame()" style="width:100%">Create game</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Saved games</div>
+      <div id="gamelist"><div class="es">No games yet &#8212; create one above.</div></div>
+    </div>
   </div>
+
+  <div id="gm-pane-setup" class="gm-pane"></div>
+
+  <div id="gm-pane-after" class="gm-pane"></div>
+
 </div>
 </div>
 <div id="pane-analytics" class="pane">
@@ -383,6 +403,16 @@ var ROSTER=[
   {num:'35',name:'Matthew Souza',pos:'RB'}
 ];
 var QB_ROSTER=ROSTER.filter(function(p){return p.pos==='QB';});
+var DFRONTS=['3-4','4-3'];
+var COVS=['Cover 0','Cover 3'];
+(function(){
+  try {
+    var sr=localStorage.getItem('hbRoster'); if(sr){var pr=JSON.parse(sr); if(pr&&pr.length){ROSTER.length=0;pr.forEach(function(p){ROSTER.push(p);});}}
+    var sdf=localStorage.getItem('hbDFronts'); if(sdf){var pdf=JSON.parse(sdf); if(pdf&&pdf.length){DFRONTS.length=0;pdf.forEach(function(f){DFRONTS.push(f);});}}
+    var sco=localStorage.getItem('hbCovs'); if(sco){var pco=JSON.parse(sco); if(pco&&pco.length){COVS.length=0;pco.forEach(function(c){COVS.push(c);});}}
+  } catch(e){}
+})();
+
 
 function rosterMatch(query,list){
   if(!query) return [];
@@ -570,17 +600,41 @@ function updateBanner(){
   }
 }
 
+
+function sanitizeFilename(s) {
+  return (s||'Game').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+}
+
+function exportFullBackup(filename) {
+  var a = document.createElement('a');
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({version:1,exported:new Date().toISOString(),games:games}, null, 2));
+  a.download = filename;
+  a.click();
+}
+
+function halftimeSnapshot() {
+  if (!gid || !games[gid]) { alert('No active game to snapshot.'); return; }
+  var g = games[gid];
+  var dateStr = g.date || new Date().toISOString().split('T')[0];
+  var filename = 'HB_vs_' + sanitizeFilename(g.opponent) + '_' + dateStr + '_Halftime.json';
+  exportFullBackup(filename);
+  toast('Halftime snapshot exported');
+}
+
 function gameOver(){
   if(!gid) return;
   var g=games[gid];
   if(!confirm('End game vs '+g.opponent+'? This will deselect the active game.')) return;
+  var dateStr = g.date || new Date().toISOString().split('T')[0];
+  var filename = 'HB_vs_' + sanitizeFilename(g.opponent) + '_' + dateStr + '.json';
+  exportFullBackup(filename);
   gid=null;
   localStorage.removeItem('hba');
   updateBanner();
   loadScore();
   updateStats();
   renderLog();
-  toast('Game over — ready for next game');
+  toast('Game over — backup saved, ready for next game');
 }
 
 function setQ(q,el){
@@ -895,7 +949,7 @@ function expGame(id){
   a.click();
 }
 
-load();updateBanner();loadScore();updateStats();renderLog();
+load();updateBanner();loadScore();updateStats();renderLog();rebuildDefDropdowns();applyPlaybookRestore();
 document.getElementById('ndate').value=new Date().toISOString().split('T')[0];
 
 // ============================================================
@@ -911,6 +965,281 @@ function aTab(id, el) {
   el.classList.add('active');
   aCurTab = id;
 }
+
+var gmCurTab = 'games';
+function gmTab(id, el) {
+  document.querySelectorAll('.gm-stab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.gm-pane').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('gm-pane-' + id).classList.add('active');
+  el.classList.add('active');
+  gmCurTab = id;
+  if (id === 'setup') gmRenderSetup();
+  if (id === 'after') gmRenderAfter();
+}
+
+function selectListText(id) {
+  var sel = document.getElementById(id);
+  if (!sel) return '';
+  return Array.prototype.slice.call(sel.options).map(function(o){return o.text;}).filter(function(t){return t!=='\u2014';}).join('\n');
+}
+
+function rebuildSelectFromList(id, items) {
+  var sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">\u2014</option>' + items.map(function(v){return '<option>'+v+'</option>';}).join('');
+}
+
+function formsExportCSV() {
+  var csv = selectListText('form');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Formations.csv';
+  a.click();
+  toast('Formations exported');
+}
+function formsImportFromTextarea() {
+  var raw = document.getElementById('forms-csv').value;
+  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  if (!list.length) { alert('No formations found.'); return; }
+  if (!confirm('Replace current formations with '+list.length+' entries?')) return;
+  rebuildSelectFromList('form', list);
+  try { localStorage.setItem('hbForms', JSON.stringify(list)); } catch(e){}
+  toast('Formations updated');
+}
+
+function motsExportCSV() {
+  var csv = selectListText('mot');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Motions.csv';
+  a.click();
+  toast('Motions exported');
+}
+function motsImportFromTextarea() {
+  var raw = document.getElementById('mots-csv').value;
+  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  if (!list.length) { alert('No motions found.'); return; }
+  if (!confirm('Replace current motions with '+list.length+' entries?')) return;
+  rebuildSelectFromList('mot', list);
+  try { localStorage.setItem('hbMots', JSON.stringify(list)); } catch(e){}
+  toast('Motions updated');
+}
+
+function holesExportCSV() {
+  var csv = selectListText('hole');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Holes.csv';
+  a.click();
+  toast('Holes exported');
+}
+function holesImportFromTextarea() {
+  var raw = document.getElementById('holes-csv').value;
+  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  if (!list.length) { alert('No holes found.'); return; }
+  if (!confirm('Replace current holes with '+list.length+' entries?')) return;
+  rebuildSelectFromList('hole', list);
+  try { localStorage.setItem('hbHoles', JSON.stringify(list)); } catch(e){}
+  toast('Holes updated');
+}
+
+function playsExportCSV() {
+  var csv = selectListText('play');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Plays.csv';
+  a.click();
+  toast('Plays exported');
+}
+function playsImportFromTextarea() {
+  var raw = document.getElementById('plays-csv').value;
+  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  if (!list.length) { alert('No plays found.'); return; }
+  if (!confirm('Replace current plays with '+list.length+' entries?')) return;
+  rebuildSelectFromList('play', list);
+  try { localStorage.setItem('hbPlays', JSON.stringify(list)); } catch(e){}
+  toast('Plays updated');
+}
+
+function applyPlaybookRestore() {
+  try {
+    var f = localStorage.getItem('hbForms'); if (f) { var fl = JSON.parse(f); if (fl && fl.length) rebuildSelectFromList('form', fl); }
+    var m = localStorage.getItem('hbMots'); if (m) { var ml = JSON.parse(m); if (ml && ml.length) rebuildSelectFromList('mot', ml); }
+    var h = localStorage.getItem('hbHoles'); if (h) { var hl = JSON.parse(h); if (hl && hl.length) rebuildSelectFromList('hole', hl); }
+    var p = localStorage.getItem('hbPlays'); if (p) { var pl = JSON.parse(p); if (pl && pl.length) rebuildSelectFromList('play', pl); }
+  } catch(e){}
+}
+
+function rosterExportCSV() {
+  var csv = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos; }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Roster.csv';
+  a.click();
+  toast('Roster exported');
+}
+
+function rosterImportFromTextarea() {
+  var raw = document.getElementById('roster-csv').value;
+  var lines = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var newRoster = [];
+  for (var i=0; i<lines.length; i++) {
+    var parts = lines[i].split(',').map(function(p){return p.trim();});
+    if (parts.length < 3) { alert('Line '+(i+1)+' is invalid. Expected: number,name,position'); return; }
+    newRoster.push({num:parts[0], name:parts[1], pos:parts[2]});
+  }
+  if (!newRoster.length) { alert('No valid roster rows found.'); return; }
+  if (!confirm('Replace current roster with '+newRoster.length+' players?')) return;
+  ROSTER.length = 0;
+  newRoster.forEach(function(p){ ROSTER.push(p); });
+  QB_ROSTER.length = 0;
+  ROSTER.filter(function(p){return p.pos==='QB';}).forEach(function(p){ QB_ROSTER.push(p); });
+  try { localStorage.setItem('hbRoster', JSON.stringify(ROSTER)); } catch(e){}
+  toast('Roster updated \u2014 '+newRoster.length+' players');
+}
+
+function frontsExportCSV() {
+  var csv = DFRONTS.join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Defensive_Fronts.csv';
+  a.click();
+  toast('Fronts exported');
+}
+
+function frontsImportFromTextarea() {
+  var raw = document.getElementById('fronts-csv').value;
+  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  if (!list.length) { alert('No fronts found.'); return; }
+  if (!confirm('Replace current fronts with '+list.length+' entries?')) return;
+  DFRONTS.length = 0;
+  list.forEach(function(f){ DFRONTS.push(f); });
+  rebuildDefDropdowns();
+  try { localStorage.setItem('hbDFronts', JSON.stringify(DFRONTS)); } catch(e){}
+  toast('Fronts updated');
+}
+
+function covsExportCSV() {
+  var csv = COVS.join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HB_Coverages.csv';
+  a.click();
+  toast('Coverages exported');
+}
+
+function covsImportFromTextarea() {
+  var raw = document.getElementById('covs-csv').value;
+  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  if (!list.length) { alert('No coverages found.'); return; }
+  if (!confirm('Replace current coverages with '+list.length+' entries?')) return;
+  COVS.length = 0;
+  list.forEach(function(c){ COVS.push(c); });
+  rebuildDefDropdowns();
+  try { localStorage.setItem('hbCovs', JSON.stringify(COVS)); } catch(e){}
+  toast('Coverages updated');
+}
+
+function rebuildDefDropdowns() {
+  var dfSel = document.getElementById('dfront');
+  var covSel = document.getElementById('cov');
+  if (dfSel) {
+    dfSel.innerHTML = '<option value="">\u2014</option>' + DFRONTS.map(function(f){return '<option>'+f+'</option>';}).join('');
+  }
+  if (covSel) {
+    covSel.innerHTML = '<option value="">\u2014</option>' + COVS.map(function(c){return '<option>'+c+'</option>';}).join('');
+  }
+}
+
+function gmRenderSetup() {
+  var el = document.getElementById('gm-pane-setup');
+  var rosterCSV = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos; }).join('\n');
+  var frontsTxt = DFRONTS.join('\n');
+  var covsTxt = COVS.join('\n');
+  var formsTxt = selectListText('form');
+  var motsTxt = selectListText('mot');
+  var holesTxt = selectListText('hole');
+  var playsTxt = selectListText('play');
+
+  el.innerHTML =
+    '<div class="card"><div class="ct">Playbook</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">One entry per line. These populate the Formation, Motion, Hole, and Play dropdowns on the Play Tracker.</div>' +
+    '<div class="a-g4">' +
+    '<div><div class="fl" style="margin-bottom:6px">Formations</div>' +
+    '<textarea id="forms-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+formsTxt+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="formsImportFromTextarea()">Import</button>' +
+    '<button class="bs" onclick="formsExportCSV()">&#8595; Export</button>' +
+    '</div></div>' +
+    '<div><div class="fl" style="margin-bottom:6px">Motions</div>' +
+    '<textarea id="mots-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+motsTxt+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="motsImportFromTextarea()">Import</button>' +
+    '<button class="bs" onclick="motsExportCSV()">&#8595; Export</button>' +
+    '</div></div>' +
+    '<div><div class="fl" style="margin-bottom:6px">Holes</div>' +
+    '<textarea id="holes-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+holesTxt+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="holesImportFromTextarea()">Import</button>' +
+    '<button class="bs" onclick="holesExportCSV()">&#8595; Export</button>' +
+    '</div></div>' +
+    '<div><div class="fl" style="margin-bottom:6px">Plays</div>' +
+    '<textarea id="plays-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+playsTxt+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="playsImportFromTextarea()">Import</button>' +
+    '<button class="bs" onclick="playsExportCSV()">&#8595; Export</button>' +
+    '</div></div>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="ct">Roster</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">CSV format: number,name,position (one player per line, no header)</div>' +
+    '<textarea id="roster-csv" rows="8" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+rosterCSV+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="rosterImportFromTextarea()">Import Roster</button>' +
+    '<button class="bs" onclick="rosterExportCSV()">&#8595; Export Roster CSV</button>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="ct">Defensive Fronts &amp; Coverages</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">One entry per line. These populate the Front and Coverage dropdowns on the Play Tracker.</div>' +
+    '<div class="a-g2">' +
+    '<div><div class="fl" style="margin-bottom:6px">Defensive Fronts</div>' +
+    '<textarea id="fronts-csv" rows="6" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+frontsTxt+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="frontsImportFromTextarea()">Import Fronts</button>' +
+    '<button class="bs" onclick="frontsExportCSV()">&#8595; Export</button>' +
+    '</div></div>' +
+    '<div><div class="fl" style="margin-bottom:6px">Coverages</div>' +
+    '<textarea id="covs-csv" rows="6" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+covsTxt+'</textarea>' +
+    '<div class="brow" style="margin-top:10px">' +
+    '<button class="bp" onclick="covsImportFromTextarea()">Import Coverages</button>' +
+    '<button class="bs" onclick="covsExportCSV()">&#8595; Export</button>' +
+    '</div></div>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="ct">HUDL Scouting Import</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">Import opponent scouting data exported from HUDL. Format to be defined.</div>' +
+    '<button class="bs" disabled style="opacity:.5;cursor:not-allowed" onclick="toast(&#39;HUDL import coming soon&#39;)">&#8593; Import HUDL Scouting Report (coming soon)</button>' +
+    '</div></div>';
+}
+
+
+
+function gmRenderAfter() {
+  var el = document.getElementById('gm-pane-after');
+  var hasActive = gid && games[gid];
+  el.innerHTML =
+    '<div class="card"><div class="ct">Halftime Snapshot</div><div style="padding:12px 14px">' +
+    '<div class="bkn" style="margin-bottom:10px">Exports a full backup of all games, tagged with the active game and today\'s date. Use this at halftime as a safety checkpoint.</div>' +
+    (hasActive ?
+      '<button class="bp" onclick="halftimeSnapshot()">&#8595; Export Halftime Snapshot</button>' :
+      '<button class="bp" disabled style="opacity:.5;cursor:not-allowed">&#8595; Export Halftime Snapshot</button><div class="bkn" style="margin-top:8px">No active game selected.</div>'
+    ) +
+    '</div></div>' +
+    '<div class="card"><div class="ct">Auto-Save on Game Over</div><div style="padding:12px 14px">' +
+    '<div class="es">A full backup automatically exports every time you click Game Over &#8212; no extra steps needed.</div>' +
+    '</div></div>';
+}
+
 
 function aInit() {
   var sel = document.getElementById('a-game-sel');
