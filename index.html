@@ -219,40 +219,20 @@ button{cursor:pointer;font-family:inherit}
     <div class="r4">
       <div class="fg"><label class="fl">Formation</label>
         <select id="form" onchange="frmType()">
-          <option value="">&#8212;</option><option>Bunch</option><option>Joker</option><option>Joker Left</option>
-          <option>Money 1</option><option>Money 2</option><option>Money 3</option>
-          <option>Money 4</option><option>Money 5</option><option>Money 6</option>
-          <option>Queen</option><option>Queen Left</option><option>Taxi</option><option>Taxi Left</option>
-          <option>Trips</option><option>Trips Left</option><option>Windy</option>
+          <option value="">&#8212;</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Motion</label>
-        <select id="mot" onchange="autoHoleType()"><option value="">&#8212;</option><option>mo</option><option>Z mo</option><option>A mo</option><option>orb</option></select>
+        <select id="mot" onchange="autoHoleType()"><option value="">&#8212;</option></select>
       </div>
       <div class="fg"><label class="fl">Protection / Hole</label>
         <select id="hole" onchange="autoHoleType()">
-          <option value="">&#8212;</option><option>1</option><option>2</option>
-          <option>10</option>
-          <option>11</option>
-          <option>28</option><option>29</option><option>30</option><option>31</option>
-          <option>40</option><option>41</option><option>50</option><option>51</option>
-          <option>58</option><option>59</option><option>80</option><option>81</option>
-          <option>82</option><option>83</option><option>84</option><option>85</option>
-          <option>86</option><option>87</option><option>88</option><option>89</option>
+          <option value="">&#8212;</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Play</label>
         <select id="play" onchange="playType()">
-          <option value="">&#8212;</option><option>Alaska</option><option>American</option><option>Badger</option>
-          <option>Bear</option><option>Bell</option><option>Bell Switch</option><option>Blood</option>
-          <option>Booger</option><option>Bow</option><option>Chop</option><option>Depot</option>
-          <option>Fist</option><option>Fist Rip</option><option>Fred</option><option>Gator</option>
-          <option>Goat</option><option>Gorilla</option><option>Hail</option><option>Hogs</option>
-          <option>Hurricane</option>
-          <option>Jet</option><option>Levels</option><option>Python</option><option>Rain</option>
-          <option>RCA</option><option>Same</option><option>Seminole</option><option>Smash</option>
-          <option>Spears</option><option>Stan</option><option>Sticks</option><option>Tony</option>
-          <option>Train</option><option>Y Low</option>
+          <option value="">&#8212;</option>
         </select>
       </div>
     </div>
@@ -406,18 +386,10 @@ var TC={Run:'pr',Pass:'pp',Toss:'pt'};
 var DOWNS=['1st','2nd','3rd','4th'];
 var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs'];
 var NA=['Incomplete','D Penalty'];
-var ROSTER=[
-  {num:'15',name:'Stevie Neibel',pos:'QB',receiverType:''},
-  {num:'25',name:'Nate Fauteux',pos:'QB',receiverType:''},
-  {num:'2',name:'Thurston Balmer',pos:'WR',receiverType:'X'},
-  {num:'23',name:'Cole Duncan',pos:'WR',receiverType:'Z'},
-  {num:'20',name:'Braylon Cudworth',pos:'WR',receiverType:'Y'},
-  {num:'4',name:'Ben York',pos:'RB',receiverType:'A'},
-  {num:'35',name:'Matthew Souza',pos:'RB',receiverType:'B'}
-];
-var QB_ROSTER=ROSTER.filter(function(p){return p.pos==='QB';});
-var DFRONTS=['3-4','4-3'];
-var COVS=['Cover 0','Cover 3'];
+var ROSTER=[];
+var QB_ROSTER=[];
+var DFRONTS=[];
+var COVS=[];
 var OPPONENTS=[];
 (function(){
   try {
@@ -660,7 +632,7 @@ function sanitizeFilename(s) {
 
 function exportFullBackup(filename) {
   var a = document.createElement('a');
-  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({version:1,exported:new Date().toISOString(),games:games}, null, 2));
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({version:1,exported:new Date().toISOString(),games:games,setup:gatherSetupData()}, null, 2));
   a.download = filename;
   a.click();
 }
@@ -970,7 +942,7 @@ function drawGames(){
 
 function expBackup(){
   var a=document.createElement('a');
-  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({version:1,exported:new Date().toISOString(),games:games},null,2));
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({version:1,exported:new Date().toISOString(),games:games,setup:gatherSetupData()},null,2));
   a.download='HB_Backup_'+new Date().toISOString().split('T')[0]+'.json';
   a.click();toast('Backup exported');
 }
@@ -982,12 +954,15 @@ function impBackup(ev){
       var d=JSON.parse(e.target.result);
       if(!d.games){alert('Invalid backup file.');return;}
       var c=Object.keys(d.games).length;
-      if(!confirm('Load '+c+' game(s) from backup?'))return;
+      var hasSetup = d.setup && typeof d.setup === 'object';
+      if(!confirm('Load '+c+' game(s)'+(hasSetup?' plus setup data':'')+' from backup?'))return;
       Object.keys(d.games).forEach(function(id){games[id]=d.games[id];});
       save();
+      if(hasSetup){ restoreSetupData(d.setup); }
     }catch(e){alert('Could not read backup file: '+e.message);return;}
     try{updateBanner();loadScore();updateStats();renderLog();drawGames();}catch(e2){}
     try{if(typeof aInit==='function')aInit();}catch(e3){}
+    try{if(gmCurTab==='setup')gmRenderSetup();}catch(e4){}
     toast('Restored — '+c+' game(s) loaded');
   };
   r.readAsText(file);ev.target.value='';
@@ -1104,6 +1079,39 @@ function applyPlaybookRestore() {
     var m = localStorage.getItem('hbMots'); if (m) { var ml = JSON.parse(m); if (ml && ml.length) rebuildSelectFromList('mot', ml); }
     var h = localStorage.getItem('hbHoles'); if (h) { var hl = JSON.parse(h); if (hl && hl.length) rebuildSelectFromList('hole', hl); }
     var p = localStorage.getItem('hbPlays'); if (p) { var pl = JSON.parse(p); if (pl && pl.length) rebuildSelectFromList('play', pl); }
+  } catch(e){}
+}
+
+function gatherSetupData() {
+  function readKey(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
+  return {
+    forms: readKey('hbForms'),
+    mots: readKey('hbMots'),
+    holes: readKey('hbHoles'),
+    plays: readKey('hbPlays'),
+    roster: readKey('hbRoster'),
+    dfronts: readKey('hbDFronts'),
+    covs: readKey('hbCovs'),
+    opponents: readKey('hbOpponents')
+  };
+}
+
+function restoreSetupData(setup) {
+  if (!setup) return;
+  try {
+    if (setup.forms && setup.forms.length) { localStorage.setItem('hbForms', JSON.stringify(setup.forms)); rebuildSelectFromList('form', setup.forms); }
+    if (setup.mots && setup.mots.length) { localStorage.setItem('hbMots', JSON.stringify(setup.mots)); rebuildSelectFromList('mot', setup.mots); }
+    if (setup.holes && setup.holes.length) { localStorage.setItem('hbHoles', JSON.stringify(setup.holes)); rebuildSelectFromList('hole', setup.holes); }
+    if (setup.plays && setup.plays.length) { localStorage.setItem('hbPlays', JSON.stringify(setup.plays)); rebuildSelectFromList('play', setup.plays); }
+    if (setup.roster && setup.roster.length) {
+      localStorage.setItem('hbRoster', JSON.stringify(setup.roster));
+      ROSTER.length = 0; setup.roster.forEach(function(p){ ROSTER.push(p); });
+      QB_ROSTER.length = 0; ROSTER.filter(function(p){return p.pos==='QB';}).forEach(function(p){ QB_ROSTER.push(p); });
+    }
+    if (setup.dfronts && setup.dfronts.length) { localStorage.setItem('hbDFronts', JSON.stringify(setup.dfronts)); DFRONTS.length=0; setup.dfronts.forEach(function(f){DFRONTS.push(f);}); }
+    if (setup.covs && setup.covs.length) { localStorage.setItem('hbCovs', JSON.stringify(setup.covs)); COVS.length=0; setup.covs.forEach(function(c){COVS.push(c);}); }
+    if (setup.opponents && setup.opponents.length) { localStorage.setItem('hbOpponents', JSON.stringify(setup.opponents)); OPPONENTS.length=0; setup.opponents.forEach(function(o){OPPONENTS.push(o);}); }
+    rebuildDefDropdowns();
   } catch(e){}
 }
 
