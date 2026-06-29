@@ -1384,16 +1384,17 @@ function aGroupBy(plays, keyFn) {
   return map;
 }
 
-function aTableRows(groups, labelFn, minPlays) {
-  // returns array sorted by avg yards desc
+function aTableRows(groups, limit, minPlays) {
+  // returns array sorted by avg yards desc; optional limit caps the number of rows
   minPlays = minPlays || 1;
-  return Object.keys(groups)
+  var rows = Object.keys(groups)
     .filter(function(k){ return groups[k].length >= minPlays; })
     .map(function(k){
       var ps = groups[k];
       return { key:k, plays:ps, count:ps.length, avg:aAvg(ps), skewed:aSkewed(ps) };
     })
     .sort(function(a,b){ return b.avg - a.avg; });
+  return (typeof limit === 'number' && limit > 0) ? rows.slice(0, limit) : rows;
 }
 
 function a3rdConv(plays) {
@@ -1700,18 +1701,18 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
 function aTopFormsPlays(plays) {
   var formGroups = aGroupBy(plays, function(p){ return aGetFormation(p.call); });
   var playGroups = aGroupBy(plays, function(p){ return aGetPlay(p.call); });
-  var formRows = aTableRows(formGroups).map(function(r){
+  var formRows = aTableRows(formGroups, 5).map(function(r){
     return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
   }).join('');
-  var hasFormAst = aTableRows(formGroups).some(function(r){return r.skewed;});
-  var playRows = aTableRows(playGroups).map(function(r){
+  var hasFormAst = aTableRows(formGroups, 5).some(function(r){return r.skewed;});
+  var playRows = aTableRows(playGroups, 5).map(function(r){
     var pt = plays.find(function(p){return aGetPlay(p.call)===r.key;})||{};
     return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
   }).join('');
-  var hasPlayAst = aTableRows(playGroups).some(function(r){return r.skewed;});
+  var hasPlayAst = aTableRows(playGroups, 5).some(function(r){return r.skewed;});
   return '<div class="a-g2">'+
-    '<div class="a-card"><div class="a-ct">Top Formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-    '<div class="a-card"><div class="a-ct">Top Plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
+    '<div class="a-card"><div class="a-ct">Top 5 Formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+    '<div class="a-card"><div class="a-ct">Top 5 Plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
   gameLabel = gameLabel||'This Game';
   var allPlaysRaw = [];
   Object.keys(games).forEach(function(id){ allPlaysRaw = allPlaysRaw.concat(games[id].plays); });
@@ -1779,18 +1780,18 @@ function aTopFormsPlays(plays) {
 function aTopFormsPlays(plays) {
   var formGroups = aGroupBy(plays, function(p){ return aGetFormation(p.call); });
   var playGroups = aGroupBy(plays, function(p){ return aGetPlay(p.call); });
-  var formRows = aTableRows(formGroups).map(function(r){
+  var formRows = aTableRows(formGroups, 5).map(function(r){
     return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
   }).join('');
-  var hasFormAst = aTableRows(formGroups).some(function(r){return r.skewed;});
-  var playRows = aTableRows(playGroups).map(function(r){
+  var hasFormAst = aTableRows(formGroups, 5).some(function(r){return r.skewed;});
+  var playRows = aTableRows(playGroups, 5).map(function(r){
     var pt = plays.find(function(p){return aGetPlay(p.call)===r.key;})||{};
     return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
   }).join('');
-  var hasPlayAst = aTableRows(playGroups).some(function(r){return r.skewed;});
+  var hasPlayAst = aTableRows(playGroups, 5).some(function(r){return r.skewed;});
   return '<div class="a-g2">'+
-    '<div class="a-card"><div class="a-ct">Top Formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-    '<div class="a-card"><div class="a-ct">Top Plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
+    '<div class="a-card"><div class="a-ct">Top 5 Formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+    '<div class="a-card"><div class="a-ct">Top 5 Plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
 }
 function aRenderTendency(gPlays, allPlays, gameLabel) {
   gameLabel = gameLabel||'This Game';
@@ -1828,20 +1829,31 @@ function aRenderTendency(gPlays, allPlays, gameLabel) {
       if (!dp.length) return '';
       var dfg = formGroups(dp);
       var dpg = playGroups(dp);
-      var dfRows = aTableRows(dfg).map(function(r){
+      var dfRows = aTableRows(dfg, 5).map(function(r){
         return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
       }).join('');
-      var dfHasAst = aTableRows(dfg).some(function(r){return r.skewed;});
-      var dpRows = aTableRows(dpg).map(function(r){
+      var dfHasAst = aTableRows(dfg, 5).some(function(r){return r.skewed;});
+      var dpRows = aTableRows(dpg, 5).map(function(r){
         var pt = dp.find(function(p){return aGetPlay(p.call)===r.key;})||{};
         return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
       }).join('');
-      var dpHasAst = aTableRows(dpg).some(function(r){return r.skewed;});
+      var dpHasAst = aTableRows(dpg, 5).some(function(r){return r.skewed;});
+      var dCallGroups = aGroupBy(dp, function(p){return p.call;});
+      var dTop5 = [].concat(dp).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
+      var dTop5rows = dTop5.map(function(p){
+        var cg = dCallGroups[p.call]||[p];
+        var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
+        var ys = p.yards>0?'+'+p.yards:String(p.yards);
+        var yc = p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
+        return '<tr><td class="l">'+p.down+' &amp; '+p.dist+'</td><td class="l">'+(p.yardline||'--')+'</td><td class="l">'+p.call+' '+star+'</td><td class="l">'+aTypePill(p.playtype)+'</td><td class="l">'+(p.defFront||'--')+'</td><td class="l">'+(p.coverage||'--')+'</td><td '+yc+'>'+ys+'</td><td class="l">'+p.result+'</td></tr>';
+      }).join('');
+      var dTop5Ast = dTop5.some(function(p){return aSkewed(dCallGroups[p.call]||[p]);});
       return '<div class="a-db"><div class="a-dh">'+dn+' down — '+dp.length+' plays</div>'+
         '<div class="a-g2">'+
-        '<div class="a-card"><div class="a-ct-season">Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-        '<div class="a-card"><div class="a-ct-season">Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-        '</div></div>';
+        '<div class="a-card"><div class="a-ct-season">Top 5 Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct-season">Top 5 Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '</div>'+
+        '<div class="a-card"><div class="a-ct-season">Top 5 Play Calls</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+dTop5rows+'</tbody></table>'+(dTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
     }).join('');
 
     return '<div class="a-card"><div class="a-ct">Plays by Down — Summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
@@ -1859,18 +1871,7 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
   function formGroups(plays){ return aGroupBy(plays, function(p){ return aGetFormation(p.call); }); }
 
   function effCards(plays, season, gl) {
-    var secLabel = gl||gameLabel||'This Game';
     var ct = season ? 'a-ct-season' : 'a-ct';
-    var pg = playGroups(plays);
-    var fg = formGroups(plays);
-    var playRows = aTableRows(pg).map(function(r){
-      return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
-    }).join('');
-    var hasPlayAst = aTableRows(pg).some(function(r){return r.skewed;});
-    var formRows = aTableRows(fg).map(function(r){
-      return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
-    }).join('');
-    var hasFormAst = aTableRows(fg).some(function(r){return r.skewed;});
 
     // Hash breakdown
     var hashes = ['Left hash','Middle','Right hash'];
@@ -1879,15 +1880,15 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
       if (!hp.length) return '';
       var hfg = formGroups(hp);
       var hpg = playGroups(hp);
-      var hfRows = aTableRows(hfg).map(function(r){
+      var hfRows = aTableRows(hfg, 5).map(function(r){
         return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
       }).join('');
-      var hfAst = aTableRows(hfg).some(function(r){return r.skewed;});
-      var hpRows = aTableRows(hpg).map(function(r){
+      var hfAst = aTableRows(hfg, 5).some(function(r){return r.skewed;});
+      var hpRows = aTableRows(hpg, 5).map(function(r){
         var pt = hp.find(function(p){return aGetPlay(p.call)===r.key;})||{};
         return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
       }).join('');
-      var hpAst = aTableRows(hpg).some(function(r){return r.skewed;});
+      var hpAst = aTableRows(hpg, 5).some(function(r){return r.skewed;});
       // Top 5 plays by yards for this hash
       var callGroups = aGroupBy(hp, function(p){return p.call;});
       var top5 = [].concat(hp).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
@@ -1905,11 +1906,11 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
       var hasTop5Ast = top5.some(function(p){return aSkewed(callGroups[p.call]||[p]);});
       return '<div class="a-db"><div class="a-dh">'+h+' — '+hp.length+' plays</div>'+
         '<div class="a-g2">'+
-        '<div class="a-card"><div class="a-ct-season">Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-        '<div class="a-card"><div class="a-ct-season">Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct-season">Top 5 Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct-season">Top 5 Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div>'+
         '<div style="margin-top:10px">'+
-        '<div style="background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px 8px 0 0">Top 5 Plays</div>'+
+        '<div style="background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px 8px 0 0">Top 5 Play Calls</div>'+
         '<div style="background:var(--color-background-secondary);border-radius:0 0 8px 8px;padding:8px">'+
         '<table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+top5rows+'</tbody></table>'+(hasTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div>';
