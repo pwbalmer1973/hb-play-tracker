@@ -380,8 +380,7 @@ button{cursor:pointer;font-family:inherit}
 
 <div class="toast" id="toast"></div>
 <script>
-var PTM={'Alaska':'Run','American':'Run','Badger':'Run','Bear':'Run','Blood':'Run','Booger':'Run','Goat':'Run','Gorilla':'Run','Hogs':'Run','Jet':'Run','Bell':'Pass','Bell Switch':'Pass','Bow':'Pass','Chop':'Pass','Depot':'Pass','Fist':'Pass','Fist Rip':'Pass','Hurricane':'Pass','Levels':'Pass','Python':'Pass','RCA':'Pass','Smash':'Pass','Spears':'Pass','Sticks':'Pass','Y Low':'Pass','Fred':'Pass','Gator':'Pass','Hail':'Pass','Rain':'Pass','Seminole':'Pass','Stan':'Pass','Tony':'Pass','Train':'Pass','Same':'Toss'};
-var FTM={'Money 1':'Pass','Money 2':'Run','Money 3':'Pass','Money 4':'Pass','Money 5':'Run','Money 6':'Pass'};
+// PTM/FTM removed — play/formation type now comes from Setup-entered data-type on each dropdown option
 var TC={Run:'pr',Pass:'pp',Toss:'pt'};
 var DOWNS=['1st','2nd','3rd','4th'];
 var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs'];
@@ -479,7 +478,7 @@ function onPlayerInput(){
   }
   showAutocomplete('plyr','plyr-list',rosterMatch(q,list));
 }
-var games={},gid=null,Q=1,lastQB='',editId=null;
+var games={},gid=null,Q=1,lastQB='',editId=null,preEditState=null;
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){navigator.serviceWorker.register('/hb-play-tracker/sw.js').catch(function(){});});
@@ -519,15 +518,17 @@ function tdYards(){
 
 // Auto-fill play type from play name
 function playType(){
-  var p=document.getElementById('play').value;
-  if(p==='Same'){ setPT('Toss'); autoComp(); return; }
-  var pt=PTM[p];
+  var sel=document.getElementById('play');
+  var opt=sel.options[sel.selectedIndex];
+  var pt=opt?opt.getAttribute('data-type'):'';
   if(pt)setPT(pt);else document.getElementById('ptype').selectedIndex=0;
   autoComp();
 }
-// Auto-fill play type from formation (Money)
+// Auto-fill play type from formation (Setup-driven, e.g. Money formations)
 function frmType(){
-  var pt=FTM[document.getElementById('form').value];
+  var sel=document.getElementById('form');
+  var opt=sel.options[sel.selectedIndex];
+  var pt=opt?opt.getAttribute('data-type'):'';
   if(pt){setPT(pt);autoComp();}
 }
 function setPT(pt){
@@ -537,16 +538,16 @@ function setPT(pt){
 // Auto-fill Completion for pass plays
 
 function autoHoleType(){
-  var hole=document.getElementById('hole').value;
-  var pt=document.getElementById('ptype');
-  var play=document.getElementById('play').value;
-  var HOLE_PASS=['10','11','28','29','30','40','41'];
-  if(!hole) return;
-  // Same always = Toss
-  if(play==='Same'){ setPT('Toss'); return; }
-  if(HOLE_PASS.indexOf(hole)>=0) setPT('Pass');
-  else setPT('Run');
-  autoComp();
+  var holeSel=document.getElementById('hole');
+  var holeOpt=holeSel.options[holeSel.selectedIndex];
+  if(!holeOpt||!holeOpt.value) return;
+  // Play (if it has a type set) trumps Hole
+  var playSel=document.getElementById('play');
+  var playOpt=playSel.options[playSel.selectedIndex];
+  var playPt=playOpt?playOpt.getAttribute('data-type'):'';
+  if(playPt){ setPT(playPt); autoComp(); return; }
+  var holePt=holeOpt.getAttribute('data-type');
+  if(holePt){ setPT(holePt); autoComp(); }
 }
 function autoComp(){
   var pt=document.getElementById('ptype').value;
@@ -692,6 +693,20 @@ function editPlay(id){
   var ps=plays();
   var p=ps.find(function(x){return x.id===id;});
   if(!p) return;
+
+  // Capture the current form state so we can restore it on Cancel or after Update
+  // (only capture once — if already mid-edit and clicking another play, keep the original pre-edit snapshot)
+  if(!preEditState){
+    var hshEl=document.getElementById('hsh');
+    preEditState={
+      dn:document.getElementById('dn').value,
+      dst:document.getElementById('dst').value,
+      hsh:hshEl.value,
+      yside:document.getElementById('yside').value,
+      yline:document.getElementById('yline').value
+    };
+  }
+
   editId=id;
 
   // Populate form fields
@@ -799,8 +814,19 @@ function cancelEdit(){
   ['yds','plyr','notes'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('qb').value=lastQB||'';
   ['res','form','hole','mot','play','ptype','dfront','cov'].forEach(function(id){document.getElementById(id).selectedIndex=0;});
-  setDn('1st'); setDs(10);
-  document.getElementById('yline').value='';
+  // Restore the real current-drive state captured before editing began
+  if(preEditState){
+    setDn(preEditState.dn);
+    setDs(preEditState.dst);
+    var hshEl=document.getElementById('hsh');
+    for(var i=0;i<hshEl.options.length;i++){if(hshEl.options[i].value===preEditState.hsh||hshEl.options[i].text===preEditState.hsh){hshEl.selectedIndex=i;break;}}
+    document.getElementById('yside').value=preEditState.yside;
+    document.getElementById('yline').value=preEditState.yline;
+    preEditState=null;
+  } else {
+    setDn('1st'); setDs(10);
+    document.getElementById('yline').value='';
+  }
 }
 
 
@@ -828,6 +854,8 @@ function logPlay(){
   if(!gid){alert('Please create or select a game first.');showTab('games');return;}
   var yr=document.getElementById('yds').value;
   if(!yr){document.getElementById('yds').focus();return;}
+  var ylRaw=document.getElementById('yline').value;
+  if(!ylRaw){document.getElementById('yline').focus();return;}
   var ps=plays();
   var dn=document.getElementById('dn').value;
   var dist=parseInt(document.getElementById('dst').value,10)||10;
@@ -850,6 +878,7 @@ function logPlay(){
     coverage:document.getElementById('cov').value||'\u2014',
     notes:document.getElementById('notes').value.trim()||''
   };
+  var wasEdit = !!editId;
   if(editId){
     // Update existing play
     var idx2=games[gid].plays.findIndex(function(x){return x.id===editId;});
@@ -868,7 +897,20 @@ function logPlay(){
   }
   if(qbv){lastQB=qbv;document.getElementById('qb').value=qbv;}
   save();updateStats();renderLog();
-  afterPlay(res,yards,dist,dIdx,side,yl);
+  if(wasEdit){
+    // Restore the real current-drive state instead of auto-advancing from the edited play
+    if(preEditState){
+      setDn(preEditState.dn);
+      setDs(preEditState.dst);
+      var hshEl2=document.getElementById('hsh');
+      for(var j=0;j<hshEl2.options.length;j++){if(hshEl2.options[j].value===preEditState.hsh||hshEl2.options[j].text===preEditState.hsh){hshEl2.selectedIndex=j;break;}}
+      document.getElementById('yside').value=preEditState.yside;
+      document.getElementById('yline').value=preEditState.yline;
+      preEditState=null;
+    }
+  } else {
+    afterPlay(res,yards,dist,dIdx,side,yl);
+  }
   ['yds','plyr','notes'].forEach(function(i){document.getElementById(i).value='';});
   ['res','form','mot','hole','play','ptype','dfront','cov'].forEach(function(i){document.getElementById(i).selectedIndex=0;});
 }
@@ -1021,21 +1063,44 @@ function gmTab(id, el) {
   if (id === 'after') gmRenderAfter();
 }
 
-function selectListText(id) {
+function selectListText(id, withType) {
   var sel = document.getElementById(id);
   if (!sel) return '';
-  return Array.prototype.slice.call(sel.options).map(function(o){return o.text;}).filter(function(t){return t!=='\u2014';}).join('\n');
+  return Array.prototype.slice.call(sel.options)
+    .filter(function(o){return o.text!=='\u2014';})
+    .map(function(o){
+      if (withType) { var t = o.getAttribute('data-type')||''; return o.text + (t?','+t:''); }
+      return o.text;
+    })
+    .join('\n');
 }
 
 function rebuildSelectFromList(id, items) {
   var sel = document.getElementById(id);
   if (!sel) return;
-  sel.innerHTML = '<option value="">\u2014</option>' + items.map(function(v){return '<option>'+v+'</option>';}).join('');
+  sel.innerHTML = '<option value="">\u2014</option>' + items.map(function(v){
+    if (v && typeof v === 'object') {
+      return '<option data-type="'+(v.type||'')+'">'+v.name+'</option>';
+    }
+    return '<option>'+v+'</option>';
+  }).join('');
+}
+
+function parseNameTypeLines(raw, validTypes) {
+  var lines = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  return lines.map(function(l){
+    var idx = l.lastIndexOf(',');
+    if (idx === -1) return { name: l, type: '' };
+    var name = l.slice(0, idx).trim();
+    var type = l.slice(idx+1).trim();
+    if (validTypes && type && validTypes.indexOf(type) === -1) { type = ''; }
+    return { name: name, type: type };
+  }).filter(function(item){ return item.name; });
 }
 
 function formsImportFromTextarea() {
   var raw = document.getElementById('forms-csv').value;
-  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var list = parseNameTypeLines(raw, ['Run','Pass']);
   if (!list.length) { alert('No formations found.'); return; }
   if (!confirm('Replace current formations with '+list.length+' entries?')) return;
   rebuildSelectFromList('form', list);
@@ -1055,7 +1120,7 @@ function motsImportFromTextarea() {
 
 function holesImportFromTextarea() {
   var raw = document.getElementById('holes-csv').value;
-  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var list = parseNameTypeLines(raw, ['Run','Pass']);
   if (!list.length) { alert('No holes found.'); return; }
   if (!confirm('Replace current holes with '+list.length+' entries?')) return;
   rebuildSelectFromList('hole', list);
@@ -1065,7 +1130,7 @@ function holesImportFromTextarea() {
 
 function playsImportFromTextarea() {
   var raw = document.getElementById('plays-csv').value;
-  var list = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var list = parseNameTypeLines(raw, ['Run','Pass','Toss']);
   if (!list.length) { alert('No plays found.'); return; }
   if (!confirm('Replace current plays with '+list.length+' entries?')) return;
   rebuildSelectFromList('play', list);
@@ -1193,15 +1258,15 @@ function gmRenderSetup() {
   var rosterCSV = ROSTER.map(function(p){ return p.num+','+p.name+','+p.pos+','+(p.receiverType||''); }).join('\n');
   var frontsTxt = DFRONTS.join('\n');
   var covsTxt = COVS.join('\n');
-  var formsTxt = selectListText('form');
+  var formsTxt = selectListText('form', true);
   var motsTxt = selectListText('mot');
-  var holesTxt = selectListText('hole');
-  var playsTxt = selectListText('play');
+  var holesTxt = selectListText('hole', true);
+  var playsTxt = selectListText('play', true);
   var opponentsTxt = OPPONENTS.map(function(o){ return o.name+','+(o.homeAway||'home'); }).join('\n');
 
   el.innerHTML =
     '<div class="card"><div class="ct">Playbook</div><div style="padding:12px 14px">' +
-    '<div class="bkn" style="margin-bottom:10px">One entry per line. These populate the Formation, Motion, Hole, and Play dropdowns on the Play Tracker.</div>' +
+    '<div class="bkn" style="margin-bottom:10px">One entry per line. Motions: name only. Formations, Protection/Hole, and Plays: name,type (type is Run, Pass, or Toss \u2014 optional, used to auto-fill play type on the Play Tracker; e.g. "Bell,Pass" or "Money 1,Pass"). These populate the Formation, Motion, Hole, and Play dropdowns on the Play Tracker.</div>' +
     '<div class="a-g4">' +
     '<div><div class="fl" style="margin-bottom:6px">Formations</div>' +
     '<textarea id="forms-csv" rows="10" style="width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #d2d2d7;border-radius:8px">'+formsTxt+'</textarea>' +
@@ -1654,7 +1719,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
       return '<tr><td class="l">'+p.call+' '+star+'</td><td>'+cg.length+'</td><td>+'+p.yards+'</td></tr>';
     }).join('');
     var hasAst = sorted.some(function(p){ return aSkewed(callGroups[p.call]||[p]); });
-    var title = 'Top 5 '+type+' plays';
+    var title = 'Top 5 '+type+' Play Calls';
     return '<div class="a-card"><div class="a-ct">'+title+'</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l">Call</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+
       (rows||'<tr><td class="l" colspan="3">No '+type.toLowerCase()+' plays</td></tr>')+
@@ -1736,7 +1801,7 @@ function aTopFormsPlays(plays) {
       return '<tr><td class="l">'+p.call+' '+star+'</td><td>'+cg.length+'</td><td>+'+p.yards+'</td></tr>';
     }).join('');
     var hasAst = sorted.some(function(p){ return aSkewed(callGroups[p.call]||[p]); });
-    var title = 'Top 5 '+type+' plays';
+    var title = 'Top 5 '+type+' Play Calls';
     return '<div class="a-card"><div class="a-ct">'+title+'</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l">Call</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+
       (rows||'<tr><td class="l" colspan="3">No '+type.toLowerCase()+' plays</td></tr>')+
@@ -1974,15 +2039,15 @@ function aRenderCritical(gPlays, allPlays, gameLabel) {
     return '<div class="a-card"><div class="'+ct+'">'+dnLabel+' Conversion Rate</div><div style="padding:12px 14px">'+
       '<div class="a-g3" style="margin-bottom:0">'+aStatCard('Attempts',conv.att)+aStatCard('Conversions',conv.conv)+aStatCard('Conv Rate',conv.pct)+'</div></div></div>'+
       '<div class="a-g2">'+
-      '<div class="a-card"><div class="'+ct+'">Best '+dnLabel+' Formations by Avg Gain</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Top '+dnLabel+' Formations by Avg Gain</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+
       (formRows||'<tr><td class="l" colspan="3">No plays</td></tr>')+
       '</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Best '+dnLabel+' Plays by Avg Gain</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">Top '+dnLabel+' Plays by Avg Gain</div><div style="padding:12px 14px">'+
       '<table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+
       (playRows||'<tr><td class="l" colspan="3">No plays</td></tr>')+
       '</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
-      '<div class="a-card"><div class="'+ct+'">All '+dnLabel+' Plays</div><div style="padding:12px 14px">'+
+      '<div class="a-card"><div class="'+ct+'">All '+dnLabel+' Play Calls</div><div style="padding:12px 14px">'+
       (dp.length?'<table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Hash</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+logRows+'</tbody></table>':
       '<div class="a-fn">No '+dnLabel.toLowerCase()+' plays.</div>')+
       '</div></div>';
@@ -2128,8 +2193,8 @@ function aRenderRedzone(gPlays, allPlays, gameLabel) {
     }).join('');
 
     return '<div class="a-g2">'+
-      '<div class="a-card"><div class="'+ct+'">Best Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-      '<div class="a-card"><div class="'+ct+'">Best Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Top Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+      '<div class="a-card"><div class="'+ct+'">Top Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>'+
       '<div class="a-g2">'+
       '<div class="a-card"><div class="'+ct+'">Fronts Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Front</th><th>Count</th><th>Avg</th><th>Run Avg</th><th>Pass Avg</th></tr></thead><tbody>'+frontRows+'</tbody></table></div></div>'+
       '<div class="a-card"><div class="'+ct+'">Coverages Faced</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Coverage</th><th>Count</th><th>Avg</th><th>Comp%</th></tr></thead><tbody>'+covRows+'</tbody></table></div></div></div>';
@@ -2138,7 +2203,7 @@ function aRenderRedzone(gPlays, allPlays, gameLabel) {
   function rzPlayLog(plays, tdsOnly, season) {
     var ct = season ? 'a-ct-season' : 'a-ct';
     var filtered = tdsOnly ? plays.filter(function(p){return p.result==='Touchdown';}) : plays;
-    var title = tdsOnly ? 'Touchdowns' : 'All Red Zone Plays';
+    var title = tdsOnly ? 'Touchdowns' : 'All Red Zone Play Calls';
     if (!filtered.length) return '<div class="a-card"><div class="'+ct+'">'+title+'</div><div style="padding:12px 14px"><div class="a-fn">No plays to show.</div></div></div>';
     var rows = filtered.map(function(p){
       var yc = p.yards<0?'style="color:#ff3b30;font-weight:600"':'';
