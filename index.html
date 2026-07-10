@@ -256,6 +256,7 @@ button{cursor:pointer;font-family:inherit}
           <option value="1st down">1st down</option>
           <option value="D Penalty">D Penalty</option>
           <option value="O Penalty">O Penalty</option>
+          <option value="Punt">Punt</option>
           <option value="Sack">Sack</option>
           <option value="Touchdown">Touchdown</option>
           <option value="Turnover on downs">Turnover on downs</option>
@@ -383,7 +384,7 @@ button{cursor:pointer;font-family:inherit}
 // PTM/FTM removed — play/formation type now comes from Setup-entered data-type on each dropdown option
 var TC={Run:'pr',Pass:'pp',Toss:'pt'};
 var DOWNS=['1st','2nd','3rd','4th'];
-var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs'];
+var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs','Punt'];
 var NA=['Incomplete','D Penalty'];
 var ROSTER=[];
 var QB_ROSTER=[];
@@ -600,6 +601,25 @@ function calcDrive(ps){
     if(PC.indexOf(ps[i].result)>=0){dp=0;dy=0;}else{dp++;dy+=ps[i].yards;}
   }
   return{dp:dp,dy:dy};
+}
+function count3AndOuts(ps){
+  // A drive is 3-and-out when exactly 3 real offensive plays occur, then the drive
+  // ends specifically on a Punt. D Penalty replays the down (doesn't count, doesn't
+  // reset). O Penalty costs a real play (counts toward the 3). Any other PC result
+  // (Touchdown, Fumble, Interception, Turnover on downs, Punt) ends the drive and
+  // resets the counter for the next one.
+  var count=0,realPlays=0;
+  for(var i=0;i<ps.length;i++){
+    var r=ps[i].result;
+    if(r==='D Penalty') continue;
+    if(PC.indexOf(r)>=0){
+      if(r==='Punt'&&realPlays===3) count++;
+      realPlays=0;
+    } else {
+      realPlays++;
+    }
+  }
+  return count;
 }
 function updateStats(){
   var ps=plays(),n=ps.length,tot=ps.reduce(function(s,p){return s+p.yards;},0);
@@ -1738,7 +1758,8 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
 
   el.innerHTML =
     aSection(gameLabel||'This Game') +
-    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+aStatCardSm('Turnovers',turnovers)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
+    '<div class="a-g4">'+aStatCardSm('Turnovers',turnovers)+aStatCardSm('3 and Out\'s',count3AndOuts(gPlays))+aStatCardSm('Punts',gPlays.filter(function(p){return p.result==='Punt';}).length)+aStatCardSm('Offensive Penalties',gPlays.filter(function(p){return p.result==='O Penalty';}).length)+'</div>'+
     aRpBar(rp,false)+
     aTopFormsPlays(gPlays)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
@@ -1749,7 +1770,8 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     aPlayerStats(gPlays)+
     '</div></div>'+
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
-    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+aStatCardSm('Turnovers',sTurnovers)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
+    '<div class="a-g4">'+aStatCardSm('Turnovers',sTurnovers)+aStatCardSm('3 and Out\'s',count3AndOuts(allPlays))+aStatCardSm('Punts',allPlays.filter(function(p){return p.result==='Punt';}).length)+aStatCardSm('Offensive Penalties',allPlays.filter(function(p){return p.result==='O Penalty';}).length)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     aPenaltyCard(allPlaysRaw, true)+
@@ -1820,7 +1842,8 @@ function aTopFormsPlays(plays) {
 
   el.innerHTML =
     aSection(gameLabel||'This Game') +
-    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+aStatCardSm('Turnovers',turnovers)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
+    '<div class="a-g4">'+aStatCardSm('Turnovers',turnovers)+aStatCardSm('3 and Out\'s',count3AndOuts(gPlays))+aStatCardSm('Punts',gPlays.filter(function(p){return p.result==='Punt';}).length)+aStatCardSm('Offensive Penalties',gPlays.filter(function(p){return p.result==='O Penalty';}).length)+'</div>'+
     aRpBar(rp,false)+
     aTopFormsPlays(gPlays)+
     '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
@@ -1831,7 +1854,8 @@ function aTopFormsPlays(plays) {
     '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
 
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
-    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+aStatCardSm('Turnovers',sTurnovers)+'</div>'+
+    '<div class="a-g5">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
+    '<div class="a-g4">'+aStatCardSm('Turnovers',sTurnovers)+aStatCardSm('3 and Out\'s',count3AndOuts(allPlays))+aStatCardSm('Punts',allPlays.filter(function(p){return p.result==='Punt';}).length)+aStatCardSm('Offensive Penalties',allPlays.filter(function(p){return p.result==='O Penalty';}).length)+'</div>'+
     aRpBar(srp,true)+
     '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
     aPenaltyCard(allPlaysRaw, true)+
