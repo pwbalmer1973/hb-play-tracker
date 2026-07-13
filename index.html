@@ -1945,14 +1945,14 @@ function aRenderTendency(gPlays, allPlays, gameLabel) {
       var dTop5Ast = dTop5.some(function(p){return aSkewed(dCallGroups[p.call]||[p]);});
       return '<div class="a-db"><div class="a-dh">'+dn+' down — '+dp.length+' plays</div>'+
         '<div class="a-g2">'+
-        '<div class="a-card"><div class="a-ct-season">Top 5 Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-        '<div class="a-card"><div class="a-ct-season">Top 5 Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct">Top 5 Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dfRows+'</tbody></table>'+(dfHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct">Top 5 Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+dpRows+'</tbody></table>'+(dpHasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div>'+
-        '<div class="a-card"><div class="a-ct-season">Top 5 Play Calls</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+dTop5rows+'</tbody></table>'+(dTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
+        '<div class="a-card"><div class="a-ct">Top 5 Play Calls</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+dTop5rows+'</tbody></table>'+(dTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
     }).join('');
 
     return '<div class="a-card"><div class="a-ct">Plays by Down — Summary</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Down</th><th>Plays</th><th>Run%</th><th>Pass%</th><th>Avg</th><th class="l">Top play</th></tr></thead><tbody>'+downSummary+'</tbody></table></div></div>'+
-      '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays By Down</div><div style="padding:12px 14px">'+downDetail+'</div></div>';
+      downDetail;
   }
 
   el.innerHTML = aSection(gameLabel||'This Game') + summaryCard(gPlays);
@@ -2001,17 +2001,15 @@ function aRenderEfficiency(gPlays, allPlays, gameLabel) {
       var hasTop5Ast = top5.some(function(p){return aSkewed(callGroups[p.call]||[p]);});
       return '<div class="a-db"><div class="a-dh">'+h+' — '+hp.length+' plays</div>'+
         '<div class="a-g2">'+
-        '<div class="a-card"><div class="a-ct-season">Top 5 Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-        '<div class="a-card"><div class="a-ct-season">Top 5 Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct">Top 5 Formations by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hfRows+'</tbody></table>'+(hfAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
+        '<div class="a-card"><div class="a-ct">Top 5 Plays by Avg Gain</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+hpRows+'</tbody></table>'+(hpAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div>'+
-        '<div style="margin-top:10px">'+
-        '<div style="background:#1a3a8c;color:#fff;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px 8px 0 0">Top 5 Play Calls</div>'+
-        '<div style="background:var(--color-background-secondary);border-radius:0 0 8px 8px;padding:8px">'+
+        '<div class="a-card"><div class="a-ct">Top 5 Play Calls</div><div style="padding:12px 14px">'+
         '<table class="a-tbl"><thead><tr><th class="l">Down</th><th class="l">Yard Line</th><th class="l">Call</th><th class="l">Type</th><th class="l">Front</th><th class="l">Cov</th><th>Yds</th><th class="l">Result</th></tr></thead><tbody>'+top5rows+'</tbody></table>'+(hasTop5Ast?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
         '</div>';
     }).join('');
 
-    return '<div class="a-card"><div class="a-ct-season">Formations &amp; Plays by Hash</div><div style="padding:12px 14px">'+hashDetail+'</div></div>';
+    return hashDetail;
   }
 
   el.innerHTML = aSection(gameLabel||'This Game') + effCards(gPlays, false, gameLabel||'This Game');
