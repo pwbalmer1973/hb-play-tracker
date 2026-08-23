@@ -673,6 +673,7 @@ function gameOver(){
   if(!gid) return;
   var g=games[gid];
   if(!confirm('End game vs '+g.opponent+'? This will deselect the active game.')) return;
+  var endedId = gid;
   var dateStr = g.date || new Date().toISOString().split('T')[0];
   var filename = 'HB_vs_' + sanitizeFilename(g.opponent) + '_' + dateStr + '.json';
   exportFullBackup(filename);
@@ -682,7 +683,11 @@ function gameOver(){
   loadScore();
   updateStats();
   renderLog();
-  toast('Game over — backup saved, ready for next game');
+  toast('Game over \u2014 backup saved, ready for next game');
+  // Open the pre-filled box score email (slight delay so the backup download starts first)
+  if (g.plays && g.plays.length) {
+    setTimeout(function(){ emailBoxScore(endedId); }, 800);
+  }
 }
 
 function setQ(q,el){
@@ -1369,16 +1374,252 @@ function gmRenderSetup() {
 
 
 
+// ===== HUDL EXPORT =====
+function hudlSplitCall(call) {
+  // Formation is either "Form" or "Form Left"; everything after is OFF PLAY
+  if (!call) return { form:'', play:'' };
+  var parts = call.trim().split(/\s+/);
+  if (!parts.length) return { form:'', play:'' };
+  var formTokens = 1;
+  if (parts.length > 1 && parts[1].toLowerCase() === 'left') formTokens = 2;
+  return {
+    form: parts.slice(0, formTokens).join(' '),
+    play: parts.slice(formTokens).join(' ')
+  };
+}
+
+function hudlDown(dn) {
+  if (!dn) return '';
+  var m = String(dn).match(/\d+/);
+  return m ? m[0] : '';
+}
+
+function hudlHash(h) {
+  if (!h) return '';
+  return String(h).replace(/\s*hash\s*/i, '').trim();
+}
+
+function hudlYardLine(yardline) {
+  // "HB 25" -> 25 (own side, positive); "OP 25" -> -25 (opponent side, negative)
+  if (!yardline) return '';
+  var m = String(yardline).match(/^(HB|OP)\s*(\d+)$/i);
+  if (!m) return '';
+  var num = parseInt(m[2], 10);
+  if (isNaN(num)) return '';
+  return (m[1].toUpperCase() === 'OP') ? -num : num;
+}
+
+function csvEscape(v) {
+  if (v === undefined || v === null) return '';
+  var s = String(v);
+  if (s === '\u2014') return '';
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function exportHudlCSV() {
+  if (!gid || !games[gid]) { alert('No active game selected.'); return; }
+  var g = games[gid];
+  if (!g.plays || !g.plays.length) { alert('No plays logged for this game.'); return; }
+
+  var headers = ['PLAY #','ODK','DN','DIST','HASH','YARD LN','PLAY TYPE','RESULT','GN/LS','OFF FORM','OFF PLAY','OFF STR','PLAY DIR','GAP','PASS ZONE','DEF FRONT','COVERAGE','BLITZ','QTR'];
+
+  var rows = g.plays.map(function(p) {
+    var sc = hudlSplitCall(p.call);
+    return [
+      p.num,
+      'O',
+      hudlDown(p.down),
+      p.dist,
+      hudlHash(p.hash),
+      hudlYardLine(p.yardline),
+      p.playtype,
+      p.result,
+      p.yards,
+      sc.form,
+      sc.play,
+      '', '', '', '',            // OFF STR, PLAY DIR, GAP, PASS ZONE (not tracked)
+      p.defFront,
+      p.coverage,
+      '',                        // BLITZ (not tracked)
+      p.quarter
+    ].map(csvEscape).join(',');
+  });
+
+  var csv = headers.join(',') + '\n' + rows.join('\n');
+  var dateStr = g.date || new Date().toISOString().split('T')[0];
+  var filename = 'HB_vs_' + sanitizeFilename(g.opponent) + '_' + dateStr + '_HUDL.csv';
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+  toast('HUDL data exported \u2014 ' + g.plays.length + ' plays');
+}
+
+// ===== BOX SCORE EMAIL =====
+var BOX_SCORE_TO = 'fastskillssports@gmail.com';
+var BOX_SCORE_CC = 'paul.balmer@gmail.com';
+
+function bsPlayerName(raw) {
+  if (!raw) return '';
+  var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===raw || p.name===raw; });
+  if (r) return r.name;
+  var parts = String(raw).split(' ');
+  if (parts.length>1 && !isNaN(parts[0])) return parts.slice(1).join(' ');
+  return raw;
+}
+
+function buildBoxScoreText(g) {
+  var plays = g.plays || [];
+  var CATCH = ['Completion','Fumble (after catch)','Touchdown','1st down'];
+  var L = [];
+
+  var dateStr = g.date ? new Date(g.date+'T00:00:00').toLocaleDateString('en-US') : '';
+  var vs = (g.homeAway==='away' ? '@ ' : 'vs. ');
+
+  L.push('HOLLIS-BROOKLINE FOOTBALL \u2014 GAME SUMMARY');
+  L.push('');
+  L.push('HB ' + (g.scoreUs||0) + ', ' + g.opponent + ' ' + (g.scoreThem||0));
+  if (dateStr) L.push(dateStr);
+  L.push('');
+
+  // Team stats
+  var totYds = plays.reduce(function(s,p){ return s + (p.yards||0); }, 0);
+  var rushYds = plays.filter(function(p){return p.playtype==='Run';}).reduce(function(s,p){return s+(p.yards||0);},0);
+  var passYds = plays.filter(function(p){return p.playtype==='Pass'||p.playtype==='Toss';}).reduce(function(s,p){return s+(p.yards||0);},0);
+  var conv = a3rdConv(plays);
+  var turnovers = plays.filter(function(p){return p.result==='Fumble'||p.result==='Fumble (after catch)'||p.result==='Interception';}).length;
+
+  L.push('TEAM STATS');
+  L.push('Total Yards: ' + totYds);
+  L.push('Rushing Yards: ' + rushYds);
+  L.push('Passing Yards: ' + passYds);
+  L.push('Total Plays: ' + plays.length);
+  L.push('3rd Down Conversions: ' + conv.conv + '/' + conv.att + ' (' + conv.pct + ')');
+  L.push('Turnovers: ' + turnovers);
+  L.push('');
+
+  // QB
+  var qbStats = {};
+  plays.forEach(function(p){
+    var qb = p.qb;
+    if (!qb || qb==='\u2014' || qb==='-') return;
+    if (!qbStats[qb]) qbStats[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,ints:0,rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,sacks:0,sackYds:0};
+    var s = qbStats[qb];
+    if (p.playtype==='Pass'||p.playtype==='Toss') {
+      if (p.result==='Completion'||p.result==='Fumble (after catch)') { s.att++; s.comp++; s.passYds+=p.yards; }
+      else if (p.result==='Incomplete') { s.att++; }
+      else if (p.result==='Interception') { s.att++; s.ints++; }
+      else if (p.result==='Touchdown') { s.att++; s.comp++; s.passYds+=p.yards; s.passTDs++; }
+      else if (p.result==='1st down') { s.att++; s.comp++; s.passYds+=p.yards; s.pass1D++; }
+      else if (p.result==='Sack') { s.sacks++; s.sackYds+=Math.abs(p.yards); }
+    }
+    if (p.playtype==='Run' && p.player===qb) {
+      s.rushAtt++; s.rushYds+=p.yards;
+      if (p.result==='Touchdown') s.rushTDs++;
+      if (p.result==='1st down') s.rush1D++;
+    }
+  });
+  var qbLines = [];
+  Object.keys(qbStats).forEach(function(qb){
+    var s = qbStats[qb];
+    if (!s.att && !s.rushAtt && !s.sacks) return;
+    var pct = s.att ? Math.round(s.comp/s.att*100)+'%' : '\u2014';
+    var main = bsPlayerName(qb) + ': ' + s.att + ' att, ' + s.comp + ' comp (' + pct + '), ' + s.passYds + ' yds';
+    if (s.passTDs) main += ', ' + s.passTDs + ' pass TD';
+    if (s.ints) main += ', ' + s.ints + ' INT';
+    if (s.pass1D) main += ', ' + s.pass1D + ' pass 1st';
+    qbLines.push(main);
+    var rush = '  Rushing: ' + s.rushAtt + ' att, ' + s.rushYds + ' yds';
+    if (s.rushTDs) rush += ', ' + s.rushTDs + ' rush TD';
+    if (s.rush1D) rush += ', ' + s.rush1D + ' rush 1st';
+    qbLines.push(rush);
+    if (s.sacks) qbLines.push('  Sacked: ' + s.sacks + ' for ' + s.sackYds + ' yds');
+  });
+  if (qbLines.length) { L.push('QB'); qbLines.forEach(function(l){L.push(l);}); L.push(''); }
+
+  // Player stats (RB / WR)
+  var pm = {};
+  plays.forEach(function(p){
+    var plyr = p.player;
+    if (!plyr || plyr==='\u2014' || plyr==='-') return;
+    if (!pm[plyr]) pm[plyr] = {rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,tgts:0,rec:0,recYds:0,recTDs:0,rec1D:0};
+    var s = pm[plyr];
+    var isQBRush = (p.playtype==='Run') && p.qb && p.player===p.qb;
+    if ((p.playtype==='Run'||p.playtype==='Toss') && !isQBRush) {
+      s.rushAtt++; s.rushYds+=p.yards;
+      if (p.result==='Touchdown') s.rushTDs++;
+      if (p.result==='1st down') s.rush1D++;
+    }
+    if (p.playtype==='Pass'||p.playtype==='Toss') {
+      if (CATCH.indexOf(p.result)>=0) {
+        s.tgts++; s.rec++; s.recYds+=p.yards;
+        if (p.result==='Touchdown') s.recTDs++;
+        if (p.result==='1st down') s.rec1D++;
+      } else if (p.result==='Incomplete'||p.result==='Interception') { s.tgts++; }
+    }
+  });
+
+  var rbLines = [], wrLines = [];
+  Object.keys(pm).forEach(function(k){
+    var s = pm[k];
+    var nm = bsPlayerName(k);
+    var r = ROSTER.find(function(p){ return (p.num+' '+p.name)===k || p.name===k; });
+    var pos = r ? r.pos : '';
+    if (s.rushAtt > 0) {
+      var line = nm + ': ' + s.rushAtt + ' att, ' + s.rushYds + ' yds';
+      if (s.rushTDs) line += ', ' + s.rushTDs + ' TD';
+      if (s.rush1D) line += ', ' + s.rush1D + ' 1st down';
+      rbLines.push({name:nm, yds:s.rushYds, text:line});
+    }
+    if (s.tgts > 0) {
+      var wline = nm + ': ' + s.tgts + ' tgt, ' + s.rec + ' rec, ' + s.recYds + ' yds';
+      if (s.recTDs) wline += ', ' + s.recTDs + ' TD';
+      if (s.rec1D) wline += ', ' + s.rec1D + ' 1st down';
+      wrLines.push({name:nm, yds:s.recYds, text:wline});
+    }
+  });
+  rbLines.sort(function(a,b){return b.yds-a.yds;});
+  wrLines.sort(function(a,b){return b.yds-a.yds;});
+
+  if (rbLines.length) { L.push('RB'); rbLines.forEach(function(l){L.push(l.text);}); L.push(''); }
+  if (wrLines.length) { L.push('WR'); wrLines.forEach(function(l){L.push(l.text);}); L.push(''); }
+
+  L.push('\u2014');
+  L.push('Sent from HB Play Tracker');
+
+  return L.join('\n');
+}
+
+function emailBoxScore(gameId) {
+  var id = gameId || gid;
+  if (!id || !games[id]) { alert('No game selected.'); return; }
+  var g = games[id];
+  if (!g.plays || !g.plays.length) { alert('No plays logged for this game.'); return; }
+  var dateStr = g.date ? new Date(g.date+'T00:00:00').toLocaleDateString('en-US') : '';
+  var vs = (g.homeAway==='away' ? '@ ' : 'vs. ');
+  var subject = 'HB ' + vs + g.opponent + ' \u2014 Final: ' + (g.scoreUs||0) + '-' + (g.scoreThem||0) + (dateStr ? ' (' + dateStr + ')' : '');
+  var body = buildBoxScoreText(g);
+  var url = 'mailto:' + encodeURIComponent(BOX_SCORE_TO) +
+            '?cc=' + encodeURIComponent(BOX_SCORE_CC) +
+            '&subject=' + encodeURIComponent(subject) +
+            '&body=' + encodeURIComponent(body);
+  window.location.href = url;
+}
+
 function gmRenderAfter() {
   var el = document.getElementById('gm-pane-after');
+  var hasGame = gid && games[gid] && games[gid].plays && games[gid].plays.length;
+  var disAttr = hasGame ? '' : ' disabled style="opacity:.5;cursor:not-allowed"';
+  var note = hasGame ? '' : '<div class="bkn" style="margin-top:8px">No active game with logged plays.</div>';
   el.innerHTML =
     '<div class="card"><div class="ct">Email Game Summary</div><div style="padding:12px 14px">' +
-    '<div class="bkn" style="margin-bottom:10px">Send a pre-formatted box score and game summary via email. Format and recipients to be defined.</div>' +
-    '<button class="bs" disabled style="opacity:.5;cursor:not-allowed" onclick="toast(&#39;Email game summary coming soon&#39;)">&#9993; Email Game Summary (coming soon)</button>' +
+    '<div class="bkn" style="margin-bottom:10px">Opens a pre-filled email with the box score and player stats. Sent automatically when you press Game Over \u2014 use this to review or resend.</div>' +
+    '<button class="bp"' + disAttr + ' onclick="emailBoxScore()">&#9993; Email Game Summary</button>' + note +
     '</div></div>' +
     '<div class="card"><div class="ct">Export HUDL Data</div><div style="padding:12px 14px">' +
-    '<div class="bkn" style="margin-bottom:10px">Export logged plays in a format HUDL can import for film tagging. Format to be defined.</div>' +
-    '<button class="bs" disabled style="opacity:.5;cursor:not-allowed" onclick="toast(&#39;HUDL export coming soon&#39;)">&#8593; Export HUDL Data (coming soon)</button>' +
+    '<div class="bkn" style="margin-bottom:10px">Exports this game\'s plays as a HUDL-formatted CSV for film tagging.</div>' +
+    '<button class="bs"' + disAttr + ' onclick="exportHudlCSV()">&#8593; Export HUDL Data</button>' + note +
     '</div></div>';
 }
 
@@ -1668,7 +1909,7 @@ function aQBRow(plays) {
   plays.forEach(function(p) {
     var qb = p.qb;
     if (!qb || qb==='\u2014' || qb==='-') return;
-    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,rushAtt:0,rushYds:0,rushTDs:0,sacks:0,sackYds:0};
+    if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,sacks:0,sackYds:0};
     if (p.playtype==='Pass'||p.playtype==='Toss') {
       if (p.result==='Completion'||p.result==='Fumble (after catch)') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
       else if (p.result==='Incomplete') { qm[qb].att++; }
@@ -1680,7 +1921,7 @@ function aQBRow(plays) {
     if (p.playtype==='Run' && p.player===qb) {
       qm[qb].rushAtt++; qm[qb].rushYds+=p.yards;
       if (p.result==='Touchdown') qm[qb].rushTDs++;
-      if (p.result==='1st down') qm[qb].rushTDs++;
+      if (p.result==='1st down') qm[qb].rush1D++;
     }
   });
   return Object.keys(qm).map(function(qb){
@@ -1692,7 +1933,7 @@ function aQBRow(plays) {
     var dispName = r ? r.name : (qb.split(' ').length>1 && !isNaN(qb.split(' ')[0]) ? qb.split(' ').slice(1).join(' ') : qb);
     return '<tr><td class="l">'+num+'</td><td class="l">'+dispName+'</td><td>'+s.att+'</td><td>'+s.comp+'</td><td>'+compPct+'</td>'+
       '<td>'+s.passYds+'</td><td>'+d(s.passTDs)+'</td><td>'+d(s.pass1D)+'</td>'+
-      '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td>'+
+      '<td>'+d(s.rushAtt)+'</td><td>'+d(s.rushYds)+'</td><td>'+d(s.rushTDs)+'</td><td>'+d(s.rush1D)+'</td>'+
       '<td>'+d(s.sacks)+'</td><td>'+d(s.sackYds)+'</td></tr>';
   }).join('');
 }
@@ -1772,7 +2013,7 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     aPenaltyCard(g.plays, false)+
     '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
     '<div style="margin-bottom:14px"><div class="a-ct" style="margin:0 -14px 10px">QB Stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(gPlays)+'</tbody></table></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(gPlays)+'</tbody></table></div>'+
     aPlayerStats(gPlays)+
     '</div></div>'+
     aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
@@ -1783,93 +2024,12 @@ function aRenderSummary(gPlays, allPlays, g, gameLabel) {
     aPenaltyCard(allPlaysRaw, true)+
     '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
     '<div style="margin-bottom:14px"><div class="a-ct" style="margin:0 -14px 10px">QB Stats</div>'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(allPlays)+'</tbody></table></div>'+
+    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(allPlays)+'</tbody></table></div>'+
     aPlayerStats(allPlays)+
-    '</div></div>'+
-    '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+aQBRow(allPlays)+'</tbody></table></div></div>';
+    '</div></div>';
 }
 
 
-function aTopFormsPlays(plays) {
-  var formGroups = aGroupBy(plays, function(p){ return aGetFormation(p.call); });
-  var playGroups = aGroupBy(plays, function(p){ return aGetPlay(p.call); });
-  var formRows = aTableRows(formGroups, 5).map(function(r){
-    return '<tr><td class="l">'+r.key+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
-  }).join('');
-  var hasFormAst = aTableRows(formGroups, 5).some(function(r){return r.skewed;});
-  var playRows = aTableRows(playGroups, 5).map(function(r){
-    var pt = plays.find(function(p){return aGetPlay(p.call)===r.key;})||{};
-    return '<tr><td class="l">'+r.key+' '+aTypePill(pt.playtype||'')+aStar(r.plays)+'</td><td>'+r.count+'</td><td>'+r.avg.toFixed(1)+'</td></tr>';
-  }).join('');
-  var hasPlayAst = aTableRows(playGroups, 5).some(function(r){return r.skewed;});
-  return '<div class="a-g2">'+
-    '<div class="a-card"><div class="a-ct">Top 5 Formations</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Formation</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+formRows+'</tbody></table>'+(hasFormAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>'+
-    '<div class="a-card"><div class="a-ct">Top 5 Plays</div><div style="padding:12px 14px"><table class="a-tbl"><thead><tr><th class="l">Play</th><th>Count</th><th>Avg</th></tr></thead><tbody>'+playRows+'</tbody></table>'+(hasPlayAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div></div>';
-  gameLabel = gameLabel||'This Game';
-  var allPlaysRaw = [];
-  Object.keys(games).forEach(function(id){ allPlaysRaw = allPlaysRaw.concat(games[id].plays); });
-  var el = document.getElementById('a-pane-summary');
-  var conv = a3rdConv(gPlays);
-  var turnovers = gPlays.filter(function(p){return p.result==='Fumble'||p.result==='Fumble (after catch)'||p.result==='Interception';}).length;
-  var rp = aRunPassSplit(gPlays);
-  var n = gPlays.length;
-  var tot = gPlays.reduce(function(s,p){return s+p.yards;},0);
-  var avg = n ? (tot/n).toFixed(1) : '—';
-  var tds = gPlays.filter(function(p){return p.result==='Touchdown';}).length;
-
-  function top5HTML(plays, type) {
-    var filtered = plays.filter(function(p){ return p.playtype===type; });
-    var callGroups = aGroupBy(filtered, function(p){return p.call;});
-    var sorted = [].concat(filtered).sort(function(a,b){return b.yards-a.yards;}).slice(0,5);
-    var seen = {};
-    var rows = sorted.map(function(p){
-      var cg = callGroups[p.call]||[p];
-      var star = aSkewed(cg)?'<span class="a-ast">*</span>':'';
-      return '<tr><td class="l">'+p.call+' '+star+'</td><td>'+cg.length+'</td><td>+'+p.yards+'</td></tr>';
-    }).join('');
-    var hasAst = sorted.some(function(p){ return aSkewed(callGroups[p.call]||[p]); });
-    var title = 'Top 5 '+type+' Play Calls';
-    return '<div class="a-card"><div class="a-ct">'+title+'</div><div style="padding:12px 14px">'+
-      '<table class="a-tbl"><thead><tr><th class="l">Call</th><th>Count</th><th>Yds</th></tr></thead><tbody>'+
-      (rows||'<tr><td class="l" colspan="3">No '+type.toLowerCase()+' plays</td></tr>')+
-      '</tbody></table>'+(hasAst?'<div class="a-fn">* yards skewed by a single big play</div>':'')+'</div></div>';
-  }
-
-
-  // Season
-  var gameCount = Object.keys(games).length;
-  var sn = allPlays.length;
-  var stot = allPlays.reduce(function(s,p){return s+p.yards;},0);
-  var sConv = a3rdConv(allPlays);
-  var sTurnovers = allPlays.filter(function(p){return p.result==='Fumble'||p.result==='Fumble (after catch)'||p.result==='Interception';}).length;
-  var srp = aRunPassSplit(allPlays);
-  var sTDs = allPlays.filter(function(p){return p.result==='Touchdown';}).length;
-
-  el.innerHTML =
-    aSection(gameLabel||'This Game') +
-    '<div class="a-g5t">'+aStatCard('Plays',n)+aStatCard('Net yards',tot)+aStatCard('Avg gain',avg)+aStatCard('Touchdowns',tds)+aStatCardSm('3rd down conv rate',conv.conv+'/'+conv.att+' '+conv.pct)+'</div>'+
-    '<div class="a-g5t">'+aStatCard('Turnovers',turnovers)+aStatCard('3 and Out\'s',count3AndOuts(gPlays))+aStatCard('Punts',gPlays.filter(function(p){return p.result==='Punt';}).length)+aStatCard('Offensive Penalties',gPlays.filter(function(p){return p.result==='O Penalty';}).length)+'<div class="a-stat a-stat-spacer"></div></div>'+
-    aRpBar(rp,false)+
-    aTopFormsPlays(gPlays)+
-    '<div class="a-g2">'+top5HTML(gPlays,'Run')+top5HTML(gPlays,'Pass')+'</div>'+
-    aPenaltyCard(g.plays, false)+
-    '<div class="a-card"><div class="a-ct">Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th></tr></thead><tbody>'+playerRows+'</tbody></table></div></div>'+
-    '<div class="a-card"><div class="a-ct">QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+qbRow+'</tbody></table></div></div>'+
-
-    aSection('Season ('+gameCount+' game'+(gameCount!==1?'s':'')+')',true) +
-    '<div class="a-g5t">'+aStatCard('Avg plays/gm',gameCount?Math.round(sn/gameCount):'—')+aStatCard('Avg yards/gm',gameCount?(stot/gameCount).toFixed(1):'—')+aStatCard('Avg gain',sn?(stot/sn).toFixed(1):'—')+aStatCard('TDs/game',gameCount?(sTDs/gameCount).toFixed(1):'—')+aStatCardSm('3rd down conv rate',sConv.conv+'/'+sConv.att+' '+sConv.pct)+'</div>'+
-    '<div class="a-g5t">'+aStatCard('Turnovers',sTurnovers)+aStatCard('3 and Out\'s',count3AndOuts(allPlays))+aStatCard('Punts',allPlays.filter(function(p){return p.result==='Punt';}).length)+aStatCard('Offensive Penalties',allPlays.filter(function(p){return p.result==='O Penalty';}).length)+'<div class="a-stat a-stat-spacer"></div></div>'+
-    aRpBar(srp,true)+
-    '<div class="a-g2">'+top5HTML(allPlays,'Run').replace(/a-ct"/g,'a-ct-season"')+top5HTML(allPlays,'Pass').replace(/a-ct"/g,'a-ct-season"')+'</div>'+
-    aPenaltyCard(allPlaysRaw, true)+
-    '<div class="a-card"><div class="a-ct-season">Season Player Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Rush<br>1st</th><th>Tgts</th><th>Rec</th><th>Rec<br>Yds</th><th>Rec<br>TDs</th><th>Rec<br>1st</th></tr></thead><tbody>'+sPlayerRows+'</tbody></table></div></div>'+
-    '<div class="a-card"><div class="a-ct-season">Season QB Stats</div><div style="padding:12px 14px">'+
-    '<table class="a-tbl"><thead><tr><th class="l">#</th><th class="l">Player</th><th>Att</th><th>Comp</th><th>Comp%</th><th>Pass<br>Yds</th><th>Pass<br>TDs</th><th>Pass<br>1st</th><th>Rush<br>Att</th><th>Rush<br>Yds</th><th>Rush<br>TDs</th><th>Sacks</th><th>Sack<br>Yds</th></tr></thead><tbody>'+sQBRow+'</tbody></table></div></div>';
-}
 
 
 function aTopFormsPlays(plays) {
