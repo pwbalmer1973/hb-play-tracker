@@ -43,6 +43,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-siz
 .qt{padding:5px 14px;border-radius:8px;border:1px solid #d2d2d7;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:#6e6e73}
 .qt.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
 .r4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.notes-span{grid-column:span 3}
 .r3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
 .fg{display:flex;flex-direction:column;gap:4px}
 .fl{font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.06em}
@@ -71,6 +72,7 @@ button{cursor:pointer;font-family:inherit}
 .pp{background:#ddeeff;color:#0055cc}
 .pt{background:#fff0e0;color:#cc6600}
 .py{background:#fff9db;color:#9a6e00}
+.bz{display:inline-block;background:#ffe5e5;color:#c62828;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle}
 .gi{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e5e5ea;border-radius:10px;margin-bottom:8px}
 .gi.ag{border-color:#1a3a8c;background:#f0f4ff}
 .gn{font-weight:600;font-size:13px}
@@ -84,7 +86,7 @@ button{cursor:pointer;font-family:inherit}
 .toast.show{opacity:1}
 .au{animation:fl .5s ease}
 @keyframes fl{0%,100%{background:transparent}50%{background:#ddeeff}}
-@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}.a-g5{grid-template-columns:repeat(3,1fr)}.a-g4{grid-template-columns:repeat(2,1fr)}.a-g5t{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}.a-g5{grid-template-columns:repeat(3,1fr)}.a-g4{grid-template-columns:repeat(2,1fr)}.a-g5t{grid-template-columns:repeat(3,1fr)}.notes-span{grid-column:span 2}}
 
 .a-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
 .a-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
@@ -278,10 +280,12 @@ button{cursor:pointer;font-family:inherit}
         </div></div>
       <div class="fg"><label class="fl">Def front</label><select id="dfront"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
       <div class="fg"><label class="fl">Coverage</label><select id="cov"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
-      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
+      <div class="fg"><label class="fl">Blitz</label><select id="blitz"><option value="">&#8212;</option><option value="Y">Yes</option></select></div>
     </div>
-    <div class="fg" style="margin-bottom:10px"><label class="fl">Notes</label><textarea id="notes" placeholder="Free form notes..."></textarea></div>
-    <div class="brow"><button class="bs" onclick="doExport()">&#8595; Export</button></div>
+    <div class="r4" style="align-items:flex-end">
+      <div class="fg notes-span" style="margin-bottom:0"><label class="fl">Notes</label><textarea id="notes" placeholder="Free form notes..."></textarea></div>
+      <div class="fg" style="margin-bottom:0;justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
+    </div>
   </div>
   <div class="card">
     <div class="ct">Play log</div>
@@ -812,6 +816,7 @@ function editPlay(id){
   for(var ci=0;ci<covSel.options.length;ci++){if(covSel.options[ci].value===p.coverage){covSel.selectedIndex=ci;break;}}
   // Set notes
   document.getElementById('notes').value=p.notes||'';
+  document.getElementById('blitz').value = p.blitz || '';
 
   // Set quarter
   var qBtns=document.querySelectorAll('.qt');
@@ -839,6 +844,7 @@ function cancelEdit(){
   document.getElementById('log-play-btn').textContent='+ Log play';
   // Clear fields
   ['yds','plyr','notes'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('blitz').selectedIndex=0;
   document.getElementById('qb').value=lastQB||'';
   ['res','form','hole','mot','play','ptype','dfront','cov'].forEach(function(id){document.getElementById(id).selectedIndex=0;});
   // Restore the real current-drive state captured before editing began
@@ -907,6 +913,7 @@ function logPlay(){
     player:document.getElementById('plyr').value.trim()||'\u2014',
     defFront:document.getElementById('dfront').value||'\u2014',
     coverage:document.getElementById('cov').value||'\u2014',
+    blitz:document.getElementById('blitz').value||'',
     notes:document.getElementById('notes').value.trim()||''
   };
   var wasEdit = !!editId;
@@ -943,6 +950,7 @@ function logPlay(){
     afterPlay(res,yards,dist,dIdx,side,yl);
   }
   ['yds','plyr','notes'].forEach(function(i){document.getElementById(i).value='';});
+  document.getElementById('blitz').selectedIndex=0;
   ['res','form','mot','hole','play','ptype','dfront','cov'].forEach(function(i){document.getElementById(i).selectedIndex=0;});
 }
 
@@ -967,7 +975,7 @@ function renderLog(){
       '<td>'+p.hash.replace(' hash','')+'</td>'+
       '<td>'+p.call+ni+'</td>'+
       '<td style="width:46px"><span class="pill '+tc+'">'+p.playtype+'</span></td>'+
-      '<td>'+p.defFront+'</td>'+
+      '<td>'+p.defFront+(p.blitz==='Y'?'<span class="bz">B</span>':'')+'</td>'+
       '<td>'+p.coverage+'</td>'+
       '<td class="'+yc+'" style="width:38px">'+ys+'</td>'+
       '<td style="text-align:left">'+(p.result==='O Penalty'?'<span class="pill py">O Penalty</span>':p.result)+'</td>'+
@@ -1053,7 +1061,6 @@ function handleCSVFileImport(ev, textareaId, saveFnName){
   r.readAsText(file);ev.target.value='';
 }
 
-function doExport(){if(gid)expGame(gid);}
 function expGame(id){
   var g=games[id];if(!g||!g.plays.length)return;
   var hdr=['#','Quarter','Down','Distance','Hash','Yard Line','Call','Play Type','QB','Player','Yards','Result','Def Front','Coverage','Notes'];
@@ -1441,7 +1448,7 @@ function exportHudlCSV() {
       '', '', '', '',            // OFF STR, PLAY DIR, GAP, PASS ZONE (not tracked)
       p.defFront,
       p.coverage,
-      '',                        // BLITZ (not tracked)
+      p.blitz || '',             // BLITZ
       p.quarter
     ].map(csvEscape).join(',');
   });
