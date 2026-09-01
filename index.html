@@ -72,10 +72,8 @@ button{cursor:pointer;font-family:inherit}
 .pt{background:#fff0e0;color:#cc6600}
 .py{background:#fff9db;color:#9a6e00}
 .bz{display:inline-block;background:#ffe5e5;color:#c62828;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle}
-.gl-g{color:#1a7a3c!important;font-weight:600}
-.gl-l{color:#c62828!important;font-weight:600}
 .yp{color:#1a7a3c!important;font-weight:600}
-.rtd{color:#1a3a8c!important;font-weight:700}
+.rtd{color:#0A84FF!important;font-weight:700}
 .gi{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e5e5ea;border-radius:10px;margin-bottom:8px}
 .gi.ag{border-color:#1a3a8c;background:#f0f4ff}
 .gn{font-weight:600;font-size:13px}
@@ -218,7 +216,7 @@ button{cursor:pointer;font-family:inherit}
     <button class="edit-banner-cancel" onclick="cancelEdit()">&#10005; Cancel</button>
   </div>
   <div class="card" id="log-card">
-    <div class="ct" id="log-card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Log a play</span><button type="button" onclick="clearPlayForm()" style="font-size:11px;font-weight:600;padding:4px 10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;cursor:pointer">Clear</button></div>
+    <div class="ct" id="log-card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Log a play</span><button type="button" onclick="clearPlayForm()" style="font-size:11px;font-weight:600;padding:5px 12px;background:#f5f5f7;color:#c62828;border:1px solid #d2d2d7;border-radius:6px;cursor:pointer;text-transform:none;letter-spacing:0">Clear</button></div>
     <div class="qtabs">
       <button class="qt active" onclick="setQ(1,this)">Q1</button>
       <button class="qt" onclick="setQ(2,this)">Q2</button>
@@ -1343,6 +1341,8 @@ function logPlay(){
   }
   var ylRaw=document.getElementById('yline').value;
   if(!ylRaw){ alert('Enter the yard line before logging this play.'); return; }
+  var qbCheck=(document.getElementById('qb').value||'').trim()||lastQB;
+  if(!qbCheck){ alert('Choose a QB before logging this play.'); return; }
   var ps=plays();
   var dn=document.getElementById('dn').value;
   var dist=parseInt(document.getElementById('dst').value,10)||10;
@@ -1419,7 +1419,6 @@ function renderLog(){
   var rows=[].concat(ps).reverse().map(function(p){
     var yc=p.yards<0?'yn':(p.yards>0?'yp':'');
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
-    var glc=p.exec==='Gain'?'gl-g':(p.exec==='Loss'?'gl-l':'');
     var rc=p.result==='Touchdown'?'rtd':'';
     var tc=TC[p.playtype]||'';var rp=(p.result==='O Penalty')?'py':'';
     return '<tr class="clickable" onclick="editPlay('+p.id+')">'+
@@ -1431,7 +1430,7 @@ function renderLog(){
       '<td>'+p.defFront+(p.blitz==='Y'?'<span class="bz">B</span>':'')+'</td>'+
       '<td>'+p.coverage+'</td>'+
       '<td class="'+yc+'" style="width:38px">'+ys+'</td>'+
-      '<td style="width:44px" class="'+glc+'">'+(p.exec||'')+'</td>'+
+      '<td style="width:44px">'+(p.exec||'')+'</td>'+
       '<td style="text-align:left" class="'+rc+'">'+(p.result==='O Penalty'?'<span class="pill py">O Penalty</span>':p.result)+'</td>'+
       '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
@@ -1980,13 +1979,19 @@ function buildBoxScoreText(g) {
     if (!qb || qb==='\u2014' || qb==='-') return;
     if (!qbStats[qb]) qbStats[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,ints:0,rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,sacks:0,sackYds:0};
     var s = qbStats[qb];
-    if (p.playtype==='Pass'||p.playtype==='Toss') {
-      if (p.result==='Completion'||p.result==='Fumble (after catch)') { s.att++; s.comp++; s.passYds+=p.yards; }
-      else if (p.result==='Incomplete') { s.att++; }
-      else if (p.result==='Interception') { s.att++; s.ints++; }
-      else if (p.result==='Touchdown') { s.att++; s.comp++; s.passYds+=p.yards; s.passTDs++; }
-      else if (p.result==='1st down') { s.att++; s.comp++; s.passYds+=p.yards; s.pass1D++; }
-      else if (p.result==='Sack') { s.sacks++; s.sackYds+=Math.abs(p.yards); }
+    if (p.playtype==='Pass') {
+      if (p.result==='Sack') {
+        // A sack is not a pass attempt.
+        s.sacks++; s.sackYds+=Math.abs(p.yards);
+      } else if (p.result!=='O Penalty' && p.result!=='D Penalty') {
+        s.att++;
+        if (p.result==='Interception') { s.ints++; }
+        else if (p.result!=='Incomplete') {
+          s.comp++; s.passYds+=p.yards;
+          if (p.result==='Touchdown') s.passTDs++;
+          if (p.result==='1st down') s.pass1D++;
+        }
+      }
     }
     if (p.playtype==='Run' && p.player===qb) {
       s.rushAtt++; s.rushYds+=p.yards;
@@ -2393,13 +2398,23 @@ function aQBRow(plays) {
     var qb = p.qb;
     if (!qb || qb==='\u2014' || qb==='-') return;
     if (!qm[qb]) qm[qb] = {att:0,comp:0,passYds:0,passTDs:0,pass1D:0,rushAtt:0,rushYds:0,rushTDs:0,rush1D:0,sacks:0,sackYds:0};
-    if (p.playtype==='Pass'||p.playtype==='Toss') {
-      if (p.result==='Completion'||p.result==='Fumble (after catch)') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; }
-      else if (p.result==='Incomplete') { qm[qb].att++; }
-      else if (p.result==='Interception') { qm[qb].att++; }
-      else if (p.result==='Touchdown') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].passTDs++; }
-      else if (p.result==='1st down') { qm[qb].att++; qm[qb].comp++; qm[qb].passYds+=p.yards; qm[qb].pass1D++; }
-      else if (p.result==='Sack') { qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards); }
+    // Toss is a lateral, not a forward pass — it carries no passing stats.
+    // Penalties wipe the play out entirely, so they are not attempts either.
+    var isPenalty = (p.result==='O Penalty'||p.result==='D Penalty');
+    if (p.playtype==='Pass' && !isPenalty) {
+      if (p.result==='Sack') {
+        // A sack is not a pass attempt.
+        qm[qb].sacks++; qm[qb].sackYds+=Math.abs(p.yards);
+      } else {
+        // Every other pass play is an attempt, however the drive ended.
+        qm[qb].att++;
+        var noCatchQB = (p.result==='Incomplete'||p.result==='Interception');
+        if (!noCatchQB) {
+          qm[qb].comp++; qm[qb].passYds+=p.yards;
+          if (p.result==='Touchdown') qm[qb].passTDs++;
+          if (p.result==='1st down') qm[qb].pass1D++;
+        }
+      }
     }
     if (p.playtype==='Run' && p.player===qb) {
       qm[qb].rushAtt++; qm[qb].rushYds+=p.yards;
