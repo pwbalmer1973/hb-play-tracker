@@ -63,7 +63,6 @@ button{cursor:pointer;font-family:inherit}
 .lt td{padding:6px 5px;border-bottom:1px solid #f5f5f7;color:#1d1d1f;vertical-align:middle;white-space:nowrap}
 .lt tr:last-child td{border-bottom:none}
 .lt tr:hover td{background:#f0f4ff}
-.yp{color:#34c759;font-weight:600}
 .yn{color:#ff3b30!important;font-weight:600}
 .yz{color:#6e6e73}
 .es{text-align:center;color:#aeaeb2;padding:2rem;font-size:13px}
@@ -73,6 +72,10 @@ button{cursor:pointer;font-family:inherit}
 .pt{background:#fff0e0;color:#cc6600}
 .py{background:#fff9db;color:#9a6e00}
 .bz{display:inline-block;background:#ffe5e5;color:#c62828;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle}
+.gl-g{color:#1a7a3c!important;font-weight:600}
+.gl-l{color:#c62828!important;font-weight:600}
+.yp{color:#1a7a3c!important;font-weight:600}
+.rtd{color:#1a3a8c!important;font-weight:700}
 .gi{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e5e5ea;border-radius:10px;margin-bottom:8px}
 .gi.ag{border-color:#1a3a8c;background:#f0f4ff}
 .gn{font-weight:600;font-size:13px}
@@ -215,7 +218,7 @@ button{cursor:pointer;font-family:inherit}
     <button class="edit-banner-cancel" onclick="cancelEdit()">&#10005; Cancel</button>
   </div>
   <div class="card" id="log-card">
-    <div class="ct" id="log-card-title">Log a play</div>
+    <div class="ct" id="log-card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Log a play</span><button type="button" onclick="clearPlayForm()" style="font-size:11px;font-weight:600;padding:4px 10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;cursor:pointer">Clear</button></div>
     <div class="qtabs">
       <button class="qt active" onclick="setQ(1,this)">Q1</button>
       <button class="qt" onclick="setQ(2,this)">Q2</button>
@@ -224,12 +227,12 @@ button{cursor:pointer;font-family:inherit}
       <button class="qt" onclick="setQ('OT',this)">OT</button>
     </div>
     <div class="r4">
-      <div class="fg"><label class="fl">Down</label><select id="dn"><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select></div>
+      <div class="fg"><label class="fl">Down</label><button type="button" class="pk-btn" id="pk-dn" onclick="pkTap('dn')"><span>1st</span><span class="pk-caret">&#9662;</span></button><select id="dn" style="display:none"><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select></div>
       <div class="fg"><label class="fl">Distance</label><button type="button" class="pk-btn" id="pk-dst" onclick="openKeypad('dst','Distance',false)"><span id="pk-dst-txt">10</span><span class="pk-caret">&#9662;</span></button><input type="number" id="dst" value="10" min="1" max="99" style="display:none"></div>
-      <div class="fg"><label class="fl">Hash</label><select id="hsh"><option>Left hash</option><option>Middle</option><option>Right hash</option></select></div>
+      <div class="fg"><label class="fl">Hash</label><button type="button" class="pk-btn" id="pk-hsh" onclick="pkTap('hsh')"><span>Left hash</span><span class="pk-caret">&#9662;</span></button><select id="hsh" style="display:none"><option>Left hash</option><option>Middle</option><option>Right hash</option></select></div>
       <div class="fg"><label class="fl">Yard line</label>
         <div style="display:flex;gap:6px;align-items:center">
-          <select id="yside" style="width:auto;flex:0 0 auto" onchange="tdYards()"><option value="ours">HB</option><option value="theirs">OP</option></select>
+          <button type="button" class="pk-btn" id="pk-yside" style="width:auto;flex:0 0 auto;min-width:64px" onclick="pkTap('yside')"><span>HB</span><span class="pk-caret">&#9662;</span></button><select id="yside" style="display:none" onchange="tdYards()"><option value="ours">HB</option><option value="theirs">OP</option></select>
           <button type="button" class="pk-btn empty" id="pk-yline" style="flex:1" onclick="openKeypad('yline','Yard line',false)"><span id="pk-yline-txt">&#8212;</span><span class="pk-caret">&#9662;</span></button>
           <input type="number" id="yline" min="1" max="50" style="display:none" oninput="tdYards()">
         </div>
@@ -274,8 +277,6 @@ button{cursor:pointer;font-family:inherit}
           <option value="">&#8212;</option>
           <option value="Gain">Gain</option>
           <option value="Loss">Loss</option>
-          <option value="Completion">Completion</option>
-          <option value="Incomplete">Incomplete</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Result</label>
@@ -308,7 +309,8 @@ button{cursor:pointer;font-family:inherit}
         </div></div>
       <div class="fg"><label class="fl">QB</label>
         <div class="autocomplete-wrap">
-          <input type="text" id="qb" placeholder="Name or #" oninput="onQBInput()" onblur="hideAutocomplete('qb-list')" autocomplete="off">
+          <button type="button" class="pk-btn empty" id="pk-qb" onclick="pkTap('qb')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+          <input type="text" id="qb" style="display:none" autocomplete="off">
           <div class="autocomplete-list" id="qb-list"></div>
         </div></div>
     </div>
@@ -587,14 +589,16 @@ function showTab(t){
 // reads .value keeps working untouched. The modal only changes how a value is chosen.
 
 var PICKER_LABELS = {
+  dn:'Down', hsh:'Hash', yside:'Side of field',
   form:'Formation', mot:'Motion', hole:'Protection / Hole', play:'Play',
-  exec:'Gain / Loss', res:'Result', plyr:'Ball carrier / target',
+  exec:'Gain / Loss', res:'Result', plyr:'Ball carrier / target', qb:'QB',
   dfront:'Def front', cov:'Coverage', blitz:'Blitz'
 };
 
 // Chains: after a field is picked, which field opens next
 var CHAIN_CALL = ['form','mot','hole','play'];
 var CHAIN_DEF  = ['dfront','cov','blitz'];
+var CHAIN_POS  = ['hsh','yside'];   // then opens the yard-line keypad
 
 var pickerField = null;      // field id currently open
 var pickerChain = null;      // array of field ids, or null if single-field
@@ -653,7 +657,7 @@ function openPicker(fieldId, chain, chainIdx) {
   document.getElementById('picker-title').textContent = PICKER_LABELS[fieldId] || 'Select';
 
   var html = '';
-  if (fieldId === 'plyr') {
+  if (fieldId === 'plyr' || fieldId === 'qb') {
     html += '<div class="pen-item" onclick="pickValue(\'\')"><span>\u2014</span></div>';
     ROSTER.forEach(function(p){
       var v = (p.num+' '+p.name).replace(/'/g,'&#39;');
@@ -703,7 +707,12 @@ function pickValue(val) {
     var nextIdx = idx + 1;
     setTimeout(function(){ openPicker(chain[nextIdx], chain, nextIdx); }, 120);
   } else {
+    var wasPos = (chain === CHAIN_POS);
     pickerChain = null; pickerChainIdx = -1;
+    // Field-position chain finishes by opening the yard-line keypad
+    if (wasPos && !endEarly) {
+      setTimeout(function(){ openKeypad('yline','Yard line',false); }, 140);
+    }
   }
 }
 
@@ -712,7 +721,17 @@ function pkTap(fieldId) {
   var el = document.getElementById(fieldId);
   var isBlank = !el || !el.value;
 
-  // Chains only run when starting from a blank field at the head of a chain
+  // Hash runs the full field-position sequence (hash -> side -> yard line) only
+  // when a new drive is starting, i.e. the last logged play changed possession.
+  // Otherwise the yard line has already auto-advanced, so just edit the hash.
+  if (fieldId === 'hsh') {
+    var ps = plays();
+    var last = ps.length ? ps[ps.length-1] : null;
+    var newDrive = !last || PC.indexOf(last.result) >= 0;
+    if (newDrive) { openPicker('hsh', CHAIN_POS, 0); return; }
+    openPicker('hsh', null, -1); return;
+  }
+  // Other chains only run when starting from a blank field at the head of a chain
   if (fieldId === 'form' && isBlank) { openPicker('form', CHAIN_CALL, 0); return; }
   if (fieldId === 'dfront' && isBlank) { openPicker('dfront', CHAIN_DEF, 0); return; }
   openPicker(fieldId, null, -1);
@@ -824,7 +843,7 @@ function openPenaltyModal(kind) {
     (kind === 'O' ? 'Offensive Penalty' : 'Defensive Penalty');
   document.getElementById('penalty-list').innerHTML = list.map(function(p){
     var yd = (sign < 0 ? '-' : '+') + p.y;
-    return '<div class="pen-item" onclick="pickPenalty(' + (sign * p.y) + ')">' +
+    return '<div class="pen-item" onclick="pickPenalty(' + (sign * p.y) + ',' + (p.afd?'true':'false') + ')">' +
            '<span>' + p.n + (p.afd ? '<span class="pen-afd">AUTO 1ST</span>' : '') + '</span>' +
            '<span class="pen-yds">' + yd + '</span></div>';
   }).join('');
@@ -835,9 +854,13 @@ function closePenaltyModal() {
   document.getElementById('penalty-modal').classList.remove('show');
 }
 
-function pickPenalty(yards) {
+var penaltyAutoFirstDown = false;
+
+function pickPenalty(yards, afd) {
   document.getElementById('yds').value = yards;
+  penaltyAutoFirstDown = !!afd;
   closePenaltyModal();
+  if (typeof kpDisplay === 'function') kpDisplay('yds');
   autoComp();
 }
 
@@ -869,8 +892,16 @@ function playType(){
   var sel=document.getElementById('play');
   var opt=sel.options[sel.selectedIndex];
   var pt=opt?opt.getAttribute('data-type'):'';
-  if(pt)setPT(pt);else document.getElementById('ptype').selectedIndex=0;
+  if(pt){ setPT(pt); }
+  else if(!sel.value){
+    // Blank play ("—") should not wipe a type already set by Protection/Hole.
+    // Re-derive from Hole so e.g. "Queen 50" keeps its Run type.
+    autoHoleType();
+  } else {
+    document.getElementById('ptype').selectedIndex=0;
+  }
   autoComp();
+  if(typeof pkDisplay==='function') pkDisplay('ptype');
 }
 // Auto-fill play type from formation (Setup-driven, e.g. Money formations)
 function frmType(){
@@ -923,12 +954,12 @@ function autoComp(){
   // --- Execution field: what actually happened on the play ---
   // Only set it when blank or previously auto-set, so manual picks stick.
   var execEl=document.getElementById('exec');
-  var execAuto=['','Gain','Loss','Completion','Incomplete'];
+  var execAuto=['','Gain','Loss'];
   if(execEl && execAuto.indexOf(execEl.value)>=0){
-    // Pass: any yardage (including 0) is a completion — incompletes are chosen manually
-    if(pt==='Pass'){ setExec('Completion'); }
-    // Run/Toss: negative is a loss, 0 or positive is a gain
-    else if(pt==='Run'||pt==='Toss'){ setExec(yards<0 ? 'Loss' : 'Gain'); }
+    // Gain/Loss is purely about yardage direction on any play type.
+    // An incomplete pass leaves it blank (Result carries that detail).
+    if(r.value==='Incomplete'){ setExec(''); }
+    else { setExec(yards<0 ? 'Loss' : 'Gain'); }
   }
 
   // --- Result field: the drive-level outcome ---
@@ -1080,7 +1111,28 @@ function advYL(side,yl,yards){
   return abs<=50?{side:'ours',yl:abs}:{side:'theirs',yl:100-abs};
 }
 function afterPlay(res,yards,dist,dIdx,side,yl){
+  // Possession changes: reset to 1st & 10, leave the ball spot alone
   if(PC.indexOf(res)>=0){setDn('1st');setDs(10);fl('dn');fl('dst');return;}
+
+  // --- Penalties (NFHS): ball moves, and the down is REPLAYED ---
+  // D Penalty: ball forward, distance shrinks; reaching the line to gain (or an
+  //   automatic-first-down foul) makes it 1st & 10.
+  // O Penalty: ball backward, distance grows, same down.
+  if(res==='D Penalty'||res==='O Penalty'){
+    var ap=advYL(side,yl,yards);
+    setYL(ap.side,ap.yl); fl('yline'); fl('yside');
+    if(res==='D Penalty' && (penaltyAutoFirstDown || yards>=dist)){
+      setDn('1st'); setDs(10);
+    } else {
+      // Replay the same down; distance adjusts by the penalty yardage
+      setDn(DOWNS[dIdx]);
+      setDs(Math.max(1, dist - yards));
+    }
+    penaltyAutoFirstDown=false;
+    fl('dn'); fl('dst');
+    return;
+  }
+
   if(NA.indexOf(res)<0){var a=advYL(side,yl,yards);setYL(a.side,a.yl);fl('yline');fl('yside');}
   if(res==='1st down'||yards>=dist){setDn('1st');setDs(10);}
   else{var nx=dIdx+1;setDn(nx>3?'1st':DOWNS[nx]);setDs(NA.indexOf(res)>=0?dist:Math.max(1,dist-yards));}
@@ -1259,17 +1311,38 @@ function createGameFromModal(){
   save(); setGame(id); closeGameModal();
   toast('Game '+(ha==='away'?'@ ':'vs. ')+opp+' started!');
 }
+// Clear the play form: everything below row 1 is wiped, and row 1 resets to
+// 1st & 10 with the ball spot left exactly where it is.
+function clearPlayForm(){
+  editId=null;
+  preEditState=null;
+  penaltyAutoFirstDown=false;
+  var eb=document.getElementById('edit-banner'); if(eb) eb.style.display='none';
+  var lb=document.getElementById('log-play-btn'); if(lb) lb.textContent='+ Log play';
+  ['yds','plyr'].forEach(function(id){var e=document.getElementById(id); if(e) e.value='';});
+  ['res','exec','form','mot','hole','play','ptype','dfront','cov','blitz'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.selectedIndex=0;
+  });
+  document.getElementById('qb').value=lastQB||'';
+  lastResultValue='';
+  // Row 1: reset the down/distance like a change of possession, keep the spot
+  setDn('1st'); setDs(10);
+  refreshAllPickers();
+  toast('Form cleared');
+}
+
 function logPlay(){
   if(!gid){alert('Please create or select a game first.');showTab('games');return;}
-  var res=document.getElementById('res').value||'\u2014';
+  var res=document.getElementById('res').value;
+  if(!res){ alert('Choose a Result before logging this play.'); return; }
   var NO_YARDS_REQUIRED=['Fumble','Incomplete','Punt'];
   var yr=document.getElementById('yds').value;
   if(!yr){
     if(NO_YARDS_REQUIRED.indexOf(res)>=0){ yr='0'; }
-    else { document.getElementById('yds').focus(); return; }
+    else { alert('Enter the yards gained or lost before logging this play.'); return; }
   }
   var ylRaw=document.getElementById('yline').value;
-  if(!ylRaw){document.getElementById('yline').focus();return;}
+  if(!ylRaw){ alert('Enter the yard line before logging this play.'); return; }
   var ps=plays();
   var dn=document.getElementById('dn').value;
   var dist=parseInt(document.getElementById('dst').value,10)||10;
@@ -1344,8 +1417,10 @@ function renderLog(){
   var el=document.getElementById('logcon'),ps=plays();
   if(!ps.length){el.innerHTML='<div class="es">No plays logged yet.</div>';return;}
   var rows=[].concat(ps).reverse().map(function(p){
-    var yc=p.yards<0?'yn':'';
+    var yc=p.yards<0?'yn':(p.yards>0?'yp':'');
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
+    var glc=p.exec==='Gain'?'gl-g':(p.exec==='Loss'?'gl-l':'');
+    var rc=p.result==='Touchdown'?'rtd':'';
     var tc=TC[p.playtype]||'';var rp=(p.result==='O Penalty')?'py':'';
     return '<tr class="clickable" onclick="editPlay('+p.id+')">'+
       '<td>'+p.down+' &amp; '+p.dist+'</td>'+
@@ -1356,11 +1431,12 @@ function renderLog(){
       '<td>'+p.defFront+(p.blitz==='Y'?'<span class="bz">B</span>':'')+'</td>'+
       '<td>'+p.coverage+'</td>'+
       '<td class="'+yc+'" style="width:38px">'+ys+'</td>'+
-      '<td style="text-align:left">'+(p.result==='O Penalty'?'<span class="pill py">O Penalty</span>':p.result)+'</td>'+
+      '<td style="width:44px" class="'+glc+'">'+(p.exec||'')+'</td>'+
+      '<td style="text-align:left" class="'+rc+'">'+(p.result==='O Penalty'?'<span class="pill py">O Penalty</span>':p.result)+'</td>'+
       '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
   }).join('');
-  el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Yard</th><th>Hash</th><th>Call</th><th>Type</th><th>Front</th><th>Cov</th><th>Yds</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Yard</th><th>Hash</th><th>Call</th><th>Type</th><th>Front</th><th>Cov</th><th>Yds</th><th>G/L</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function newGame(){
