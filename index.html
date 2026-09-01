@@ -151,6 +151,12 @@ button{cursor:pointer;font-family:inherit}
 .modal-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .modal-label{font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.06em}
 .modal-btns{display:flex;gap:8px;margin-top:16px}
+.pen-list{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid #e5e5ea;border-radius:10px}
+.pen-item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #f0f0f2;cursor:pointer;font-size:14px;color:#1d1d1f}
+.pen-item:last-child{border-bottom:none}
+.pen-item:active{background:#eef3fb}
+.pen-yds{font-weight:700;font-size:13px;color:#1a3a8c;margin-left:12px;white-space:nowrap}
+.pen-afd{font-size:9px;font-weight:700;color:#c62828;background:#ffe5e5;padding:1px 5px;border-radius:3px;margin-left:6px}
 
 .gm-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
 .gm-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
@@ -248,7 +254,7 @@ button{cursor:pointer;font-family:inherit}
         <input type="number" id="yds" placeholder="e.g. 5 or -2" oninput="autoComp()">
       </div>
       <div class="fg"><label class="fl">Result</label>
-        <select id="res" onchange="tdYards()">
+        <select id="res" onchange="onResultChange()">
           <option value="">&#8212;</option>
           <option value="Gain">Gain</option>
           <option value="Loss">Loss</option>
@@ -385,6 +391,16 @@ button{cursor:pointer;font-family:inherit}
   </div>
 </div>
 
+<div class="modal-overlay" id="penalty-modal" onclick="if(event.target===this)closePenaltyModal()">
+  <div class="modal-box">
+    <div class="modal-title" id="penalty-modal-title">Select Penalty</div>
+    <div class="pen-list" id="penalty-list"></div>
+    <div class="modal-btns">
+      <button class="bs" onclick="closePenaltyModal()" style="flex:1">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 // PTM/FTM removed — play/formation type now comes from Setup-entered data-type on each dropdown option
@@ -510,6 +526,74 @@ function showTab(t){
 }
 
 // Auto-fill yards when Touchdown is selected
+// ===== PENALTY QUICK-PICK (yards calculator only — nothing is stored beyond yards) =====
+var O_PENALTIES = [
+  {n:'False start', y:5},
+  {n:'Illegal formation', y:5},
+  {n:'Illegal motion/shift', y:5},
+  {n:'Illegal procedure', y:5},
+  {n:'Delay of game', y:5},
+  {n:'Holding', y:10},
+  {n:'Illegal block in the back', y:10},
+  {n:'Illegal use of hands', y:10},
+  {n:'Chop block', y:15},
+  {n:'Clipping', y:15},
+  {n:'Personal foul', y:15},
+  {n:'Unsportsmanlike conduct', y:15}
+];
+var D_PENALTIES = [
+  {n:'Offside', y:5},
+  {n:'Encroachment', y:5},
+  {n:'Neutral zone infraction', y:5},
+  {n:'Illegal substitution', y:5},
+  {n:'Face mask (incidental)', y:5},
+  {n:'Holding', y:10},
+  {n:'Illegal use of hands', y:10},
+  {n:'Pass interference', y:15},
+  {n:'Face mask (flagrant)', y:15},
+  {n:'Personal foul', y:15},
+  {n:'Targeting', y:15},
+  {n:'Roughing the passer', y:15, afd:true},
+  {n:'Roughing the kicker', y:15, afd:true},
+  {n:'Roughing the snapper', y:15, afd:true},
+  {n:'Unsportsmanlike conduct', y:15, afd:true}
+];
+var lastResultValue = '';
+
+function openPenaltyModal(kind) {
+  var list = (kind === 'O') ? O_PENALTIES : D_PENALTIES;
+  var sign = (kind === 'O') ? -1 : 1;
+  document.getElementById('penalty-modal-title').textContent =
+    (kind === 'O' ? 'Offensive Penalty' : 'Defensive Penalty');
+  document.getElementById('penalty-list').innerHTML = list.map(function(p){
+    var yd = (sign < 0 ? '-' : '+') + p.y;
+    return '<div class="pen-item" onclick="pickPenalty(' + (sign * p.y) + ')">' +
+           '<span>' + p.n + (p.afd ? '<span class="pen-afd">AUTO 1ST</span>' : '') + '</span>' +
+           '<span class="pen-yds">' + yd + '</span></div>';
+  }).join('');
+  document.getElementById('penalty-modal').classList.add('show');
+}
+
+function closePenaltyModal() {
+  document.getElementById('penalty-modal').classList.remove('show');
+}
+
+function pickPenalty(yards) {
+  document.getElementById('yds').value = yards;
+  closePenaltyModal();
+  autoComp();
+}
+
+function onResultChange() {
+  var res = document.getElementById('res').value;
+  if (res !== lastResultValue) {
+    if (res === 'O Penalty') openPenaltyModal('O');
+    else if (res === 'D Penalty') openPenaltyModal('D');
+  }
+  lastResultValue = res;
+  tdYards();
+}
+
 function tdYards(){
   var res=document.getElementById('res').value;
   if(res==='Interception'||res==='Fumble'){
@@ -804,6 +888,7 @@ function editPlay(id){
   // Set result
   var resSel=document.getElementById('res');
   for(var ri=0;ri<resSel.options.length;ri++){if(resSel.options[ri].value===p.result){resSel.selectedIndex=ri;break;}}
+  lastResultValue = resSel.value;
   // Set QB
   document.getElementById('qb').value=p.qb||'';
   // Set player
@@ -847,6 +932,7 @@ function cancelEdit(){
   document.getElementById('blitz').selectedIndex=0;
   document.getElementById('qb').value=lastQB||'';
   ['res','form','hole','mot','play','ptype','dfront','cov'].forEach(function(id){document.getElementById(id).selectedIndex=0;});
+  lastResultValue = '';
   // Restore the real current-drive state captured before editing began
   if(preEditState){
     setDn(preEditState.dn);
@@ -952,6 +1038,7 @@ function logPlay(){
   ['yds','plyr','notes'].forEach(function(i){document.getElementById(i).value='';});
   document.getElementById('blitz').selectedIndex=0;
   ['res','form','mot','hole','play','ptype','dfront','cov'].forEach(function(i){document.getElementById(i).selectedIndex=0;});
+  lastResultValue = '';
 }
 
 function delPlay(id){if(!confirm('Delete this play?'))return;
