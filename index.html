@@ -43,8 +43,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-siz
 .qt{padding:5px 14px;border-radius:8px;border:1px solid #d2d2d7;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:#6e6e73}
 .qt.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
 .r4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
-.notes-span{grid-column:span 3}
 .r3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.r2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
 .fg{display:flex;flex-direction:column;gap:4px}
 .fl{font-size:10px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.06em}
 select,input[type=text],input[type=number],input[type=date],textarea{width:100%;padding:7px 9px;border-radius:8px;border:1px solid #d2d2d7;background:#f5f5f7;color:#1d1d1f;font-size:13px;font-family:inherit;outline:none;-webkit-appearance:none}
@@ -86,7 +86,7 @@ button{cursor:pointer;font-family:inherit}
 .toast.show{opacity:1}
 .au{animation:fl .5s ease}
 @keyframes fl{0%,100%{background:transparent}50%{background:#ddeeff}}
-@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}.a-g5{grid-template-columns:repeat(3,1fr)}.a-g4{grid-template-columns:repeat(2,1fr)}.a-g5t{grid-template-columns:repeat(3,1fr)}.notes-span{grid-column:span 2}}
+@media(max-width:600px){.sg{grid-template-columns:repeat(3,1fr)}.r4{grid-template-columns:repeat(2,1fr)}.r3{grid-template-columns:repeat(2,1fr)}.a-g5{grid-template-columns:repeat(3,1fr)}.a-g4{grid-template-columns:repeat(2,1fr)}.a-g5t{grid-template-columns:repeat(3,1fr)}}
 
 .a-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
 .a-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
@@ -157,6 +157,15 @@ button{cursor:pointer;font-family:inherit}
 .pen-item:active{background:#eef3fb}
 .pen-yds{font-weight:700;font-size:13px;color:#1a3a8c;margin-left:12px;white-space:nowrap}
 .pen-afd{font-size:9px;font-weight:700;color:#c62828;background:#ffe5e5;padding:1px 5px;border-radius:3px;margin-left:6px}
+.pk-btn{width:100%;padding:9px 10px;font-size:14px;font-weight:500;color:#1d1d1f;background:#fff;border:1px solid #d2d2d7;border-radius:8px;text-align:left;cursor:pointer;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.pk-btn:active{background:#eef3fb;border-color:#1a3a8c}
+.pk-btn.empty{color:#9a9a9e}
+.pk-caret{color:#9a9a9e;font-size:11px;flex:0 0 auto}
+.kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kp-key{padding:16px 0;font-size:20px;font-weight:600;background:#f5f5f7;border:1px solid #e5e5ea;border-radius:10px;cursor:pointer;color:#1d1d1f}
+.kp-key:active{background:#dfe7f5}
+.kp-key.wide{grid-column:span 2}
+.kp-disp{font-size:30px;font-weight:700;text-align:center;padding:12px;background:#f5f5f7;border-radius:10px;margin-bottom:12px;min-height:58px;color:#1d1d1f;letter-spacing:.02em}
 
 .gm-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
 .gm-stab.active{background:#1a3a8c;color:#fff;border-color:#1a3a8c}
@@ -216,32 +225,37 @@ button{cursor:pointer;font-family:inherit}
     </div>
     <div class="r4">
       <div class="fg"><label class="fl">Down</label><select id="dn"><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select></div>
-      <div class="fg"><label class="fl">Distance</label><input type="number" id="dst" value="10" min="1" max="99"></div>
+      <div class="fg"><label class="fl">Distance</label><button type="button" class="pk-btn" id="pk-dst" onclick="openKeypad('dst','Distance',false)"><span id="pk-dst-txt">10</span><span class="pk-caret">&#9662;</span></button><input type="number" id="dst" value="10" min="1" max="99" style="display:none"></div>
       <div class="fg"><label class="fl">Hash</label><select id="hsh"><option>Left hash</option><option>Middle</option><option>Right hash</option></select></div>
       <div class="fg"><label class="fl">Yard line</label>
         <div style="display:flex;gap:6px;align-items:center">
           <select id="yside" style="width:auto;flex:0 0 auto" onchange="tdYards()"><option value="ours">HB</option><option value="theirs">OP</option></select>
-          <input type="number" id="yline" placeholder="25" min="1" max="50" style="flex:1" oninput="tdYards()">
+          <button type="button" class="pk-btn empty" id="pk-yline" style="flex:1" onclick="openKeypad('yline','Yard line',false)"><span id="pk-yline-txt">&#8212;</span><span class="pk-caret">&#9662;</span></button>
+          <input type="number" id="yline" min="1" max="50" style="display:none" oninput="tdYards()">
         </div>
       </div>
     </div>
     <div class="div"></div>
     <div class="r4">
       <div class="fg"><label class="fl">Formation</label>
-        <select id="form" onchange="frmType()">
+        <button type="button" class="pk-btn empty" id="pk-form" onclick="pkTap('form')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+        <select id="form" onchange="frmType()" style="display:none">
           <option value="">&#8212;</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Motion</label>
-        <select id="mot" onchange="autoHoleType()"><option value="">&#8212;</option></select>
+        <button type="button" class="pk-btn empty" id="pk-mot" onclick="pkTap('mot')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+        <select id="mot" onchange="autoHoleType()" style="display:none"><option value="">&#8212;</option></select>
       </div>
       <div class="fg"><label class="fl">Protection / Hole</label>
-        <select id="hole" onchange="autoHoleType()">
+        <button type="button" class="pk-btn empty" id="pk-hole" onclick="pkTap('hole')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+        <select id="hole" onchange="autoHoleType()" style="display:none">
           <option value="">&#8212;</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Play</label>
-        <select id="play" onchange="playType()">
+        <button type="button" class="pk-btn empty" id="pk-play" onclick="pkTap('play')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+        <select id="play" onchange="playType()" style="display:none">
           <option value="">&#8212;</option>
         </select>
       </div>
@@ -251,10 +265,22 @@ button{cursor:pointer;font-family:inherit}
         <select id="ptype" onchange="autoComp();onPlayerInput()"><option value="">&#8212;</option><option value="Run">Run</option><option value="Pass">Pass</option><option value="Toss">Toss</option></select>
       </div>
       <div class="fg"><label class="fl">Yards gained / lost</label>
-        <input type="number" id="yds" placeholder="e.g. 5 or -2" oninput="autoComp()">
+        <button type="button" class="pk-btn empty" id="pk-yds" onclick="openKeypad('yds','Yards gained / lost',true,afterYards)"><span id="pk-yds-txt">&#8212;</span><span class="pk-caret">&#9662;</span></button>
+        <input type="number" id="yds" style="display:none" oninput="autoComp()">
+      </div>
+      <div class="fg"><label class="fl">Gain / Loss</label>
+        <button type="button" class="pk-btn empty" id="pk-exec" onclick="pkTap('exec')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+        <select id="exec" style="display:none">
+          <option value="">&#8212;</option>
+          <option value="Gain">Gain</option>
+          <option value="Loss">Loss</option>
+          <option value="Completion">Completion</option>
+          <option value="Incomplete">Incomplete</option>
+        </select>
       </div>
       <div class="fg"><label class="fl">Result</label>
-        <select id="res" onchange="onResultChange()">
+        <button type="button" class="pk-btn empty" id="pk-res" onclick="pkTap('res')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+        <select id="res" onchange="onResultChange()" style="display:none">
           <option value="">&#8212;</option>
           <option value="Gain">Gain</option>
           <option value="Loss">Loss</option>
@@ -272,6 +298,14 @@ button{cursor:pointer;font-family:inherit}
           <option value="Turnover on downs">Turnover on downs</option>
         </select>
       </div>
+    </div>
+    <div class="r2">
+      <div class="fg"><label class="fl">Ball carrier / target</label>
+        <div class="autocomplete-wrap">
+          <button type="button" class="pk-btn empty" id="pk-plyr" onclick="pkTap('plyr')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button>
+          <input type="text" id="plyr" style="display:none" autocomplete="off">
+          <div class="autocomplete-list" id="plyr-list"></div>
+        </div></div>
       <div class="fg"><label class="fl">QB</label>
         <div class="autocomplete-wrap">
           <input type="text" id="qb" placeholder="Name or #" oninput="onQBInput()" onblur="hideAutocomplete('qb-list')" autocomplete="off">
@@ -279,18 +313,10 @@ button{cursor:pointer;font-family:inherit}
         </div></div>
     </div>
     <div class="r4">
-      <div class="fg"><label class="fl">Ball carrier / target</label>
-        <div class="autocomplete-wrap">
-          <input type="text" id="plyr" placeholder="Name or #" oninput="onPlayerInput()" onblur="hideAutocomplete('plyr-list')" autocomplete="off">
-          <div class="autocomplete-list" id="plyr-list"></div>
-        </div></div>
-      <div class="fg"><label class="fl">Def front</label><select id="dfront"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
-      <div class="fg"><label class="fl">Coverage</label><select id="cov"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
-      <div class="fg"><label class="fl">Blitz</label><select id="blitz"><option value="">&#8212;</option><option value="Y">Yes</option></select></div>
-    </div>
-    <div class="r4" style="align-items:flex-end">
-      <div class="fg notes-span" style="margin-bottom:0"><label class="fl">Notes</label><textarea id="notes" placeholder="Free form notes..."></textarea></div>
-      <div class="fg" style="margin-bottom:0;justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
+      <div class="fg"><label class="fl">Def front</label><button type="button" class="pk-btn empty" id="pk-dfront" onclick="pkTap('dfront')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button><select id="dfront" style="display:none"><option value="">&#8212;</option><option value="3-4">3-4</option><option value="4-3">4-3</option></select></div>
+      <div class="fg"><label class="fl">Coverage</label><button type="button" class="pk-btn empty" id="pk-cov" onclick="pkTap('cov')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button><select id="cov" style="display:none"><option value="">&#8212;</option><option value="Cover 0">Cover 0</option><option value="Cover 3">Cover 3</option></select></div>
+      <div class="fg"><label class="fl">Blitz</label><button type="button" class="pk-btn empty" id="pk-blitz" onclick="pkTap('blitz')"><span>&#8212;</span><span class="pk-caret">&#9662;</span></button><select id="blitz" style="display:none"><option value="">&#8212;</option><option value="Y">Yes</option></select></div>
+      <div class="fg" style="justify-content:flex-end"><label class="fl">&nbsp;</label><button class="bp" onclick="logPlay()" style="width:100%" id="log-play-btn">+ Log play</button></div>
     </div>
   </div>
   <div class="card">
@@ -387,6 +413,36 @@ button{cursor:pointer;font-family:inherit}
     <div class="modal-btns">
       <button class="bp" onclick="createGameFromModal()" style="flex:1">Create game</button>
       <button class="bs" onclick="closeGameModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="picker-modal" onclick="if(event.target===this)closePicker(true)">
+  <div class="modal-box">
+    <div class="modal-title" id="picker-title">Select</div>
+    <div class="pen-list" id="picker-list"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="keypad-modal" onclick="if(event.target===this)closeKeypad(true)">
+  <div class="modal-box" style="max-width:300px">
+    <div class="modal-title" id="keypad-title">Enter value</div>
+    <div class="kp-disp" id="keypad-display">0</div>
+    <div class="kp-grid">
+      <button class="kp-key" onclick="kpDigit('7')">7</button>
+      <button class="kp-key" onclick="kpDigit('8')">8</button>
+      <button class="kp-key" onclick="kpDigit('9')">9</button>
+      <button class="kp-key" onclick="kpDigit('4')">4</button>
+      <button class="kp-key" onclick="kpDigit('5')">5</button>
+      <button class="kp-key" onclick="kpDigit('6')">6</button>
+      <button class="kp-key" onclick="kpDigit('1')">1</button>
+      <button class="kp-key" onclick="kpDigit('2')">2</button>
+      <button class="kp-key" onclick="kpDigit('3')">3</button>
+      <button class="kp-key" id="kp-sign" onclick="kpToggleSign()">+/&minus;</button>
+      <button class="kp-key" onclick="kpDigit('0')">0</button>
+      <button class="kp-key" onclick="kpBack()">&#9003;</button>
+      <button class="kp-key wide" style="background:#1a3a8c;color:#fff;border-color:#1a3a8c" onclick="kpEnter()">Enter</button>
+      <button class="kp-key" onclick="closeKeypad(true)">Esc</button>
     </div>
   </div>
 </div>
@@ -526,6 +582,207 @@ function showTab(t){
 }
 
 // Auto-fill yards when Touchdown is selected
+// ===== GENERIC PICKER MODAL ENGINE =====
+// Backing <select> elements stay in the DOM (hidden) so all existing logic that
+// reads .value keeps working untouched. The modal only changes how a value is chosen.
+
+var PICKER_LABELS = {
+  form:'Formation', mot:'Motion', hole:'Protection / Hole', play:'Play',
+  exec:'Gain / Loss', res:'Result', plyr:'Ball carrier / target',
+  dfront:'Def front', cov:'Coverage', blitz:'Blitz'
+};
+
+// Chains: after a field is picked, which field opens next
+var CHAIN_CALL = ['form','mot','hole','play'];
+var CHAIN_DEF  = ['dfront','cov','blitz'];
+
+var pickerField = null;      // field id currently open
+var pickerChain = null;      // array of field ids, or null if single-field
+var pickerChainIdx = -1;
+
+function pkDisplay(fieldId) {
+  // Update the visible button text for a field from its backing select/input
+  var btn = document.getElementById('pk-'+fieldId);
+  if (!btn) return;
+  var el = document.getElementById(fieldId);
+  var val = el ? el.value : '';
+  var txt = val;
+  if (el && el.tagName === 'SELECT' && el.selectedIndex >= 0) {
+    txt = el.options[el.selectedIndex].text;
+  }
+  if (!val) { txt = '\u2014'; btn.classList.add('empty'); }
+  else { btn.classList.remove('empty'); }
+  btn.innerHTML = '<span>'+txt+'</span><span class="pk-caret">\u25BE</span>';
+}
+
+function refreshAllPickers() {
+  Object.keys(PICKER_LABELS).forEach(pkDisplay);
+  ['dst','yline','yds'].forEach(kpDisplay);
+}
+
+// Update the visible button text for a keypad-backed numeric field
+function kpDisplay(fieldId) {
+  var span = document.getElementById('pk-'+fieldId+'-txt');
+  var btn = document.getElementById('pk-'+fieldId);
+  if (!span || !btn) return;
+  var v = document.getElementById(fieldId).value;
+  if (v === '' || v === null || v === undefined) {
+    span.innerHTML = '&#8212;';
+    btn.classList.add('empty');
+  } else {
+    span.textContent = v;
+    btn.classList.remove('empty');
+  }
+}
+
+// After yards are entered, run the result cascade then chain to Ball carrier
+function afterYards() {
+  kpDisplay('yds');
+  pkDisplay('res');
+  var res = document.getElementById('res').value;
+  var skip = ['Incomplete','Sack','O Penalty','D Penalty'];
+  if (skip.indexOf(res) >= 0) return;
+  setTimeout(function(){ openPicker('plyr', null, -1); }, 140);
+}
+
+function openPicker(fieldId, chain, chainIdx) {
+  pickerField = fieldId;
+  pickerChain = chain || null;
+  pickerChainIdx = (typeof chainIdx === 'number') ? chainIdx : -1;
+
+  document.getElementById('picker-title').textContent = PICKER_LABELS[fieldId] || 'Select';
+
+  var html = '';
+  if (fieldId === 'plyr') {
+    html += '<div class="pen-item" onclick="pickValue(\'\')"><span>\u2014</span></div>';
+    ROSTER.forEach(function(p){
+      var v = (p.num+' '+p.name).replace(/'/g,'&#39;');
+      html += '<div class="pen-item" onclick="pickValue(\''+v+'\')">' +
+              '<span>'+p.num+' '+p.name+'</span>' +
+              '<span class="pen-yds">'+(p.pos||'')+'</span></div>';
+    });
+  } else {
+    var sel = document.getElementById(fieldId);
+    if (!sel) return;
+    Array.prototype.slice.call(sel.options).forEach(function(o){
+      var v = o.value.replace(/'/g,'&#39;');
+      html += '<div class="pen-item" onclick="pickValue(\''+v+'\')"><span>'+o.text+'</span></div>';
+    });
+  }
+  document.getElementById('picker-list').innerHTML = html;
+  document.getElementById('picker-modal').classList.add('show');
+}
+
+function closePicker(stopChain) {
+  document.getElementById('picker-modal').classList.remove('show');
+  if (stopChain) { pickerChain = null; pickerChainIdx = -1; }
+  pickerField = null;
+}
+
+function pickValue(val) {
+  var fieldId = pickerField;
+  var chain = pickerChain, idx = pickerChainIdx;
+  if (!fieldId) { closePicker(true); return; }
+
+  var el = document.getElementById(fieldId);
+  if (el) el.value = val;
+  pkDisplay(fieldId);
+
+  // Close this modal FIRST so any modal opened by the field's own handler
+  // (e.g. Result -> penalty quick-pick) is not stacked behind it.
+  document.getElementById('picker-modal').classList.remove('show');
+  pickerField = null;
+
+  // Money formations complete the call on their own — end the chain early
+  var endEarly = (fieldId === 'form' && /^Money\b/i.test(val));
+
+  // Now fire the field's existing onchange logic so auto-fill still works
+  if (el && typeof el.onchange === 'function') el.onchange();
+
+  if (chain && idx >= 0 && idx < chain.length - 1 && !endEarly) {
+    var nextIdx = idx + 1;
+    setTimeout(function(){ openPicker(chain[nextIdx], chain, nextIdx); }, 120);
+  } else {
+    pickerChain = null; pickerChainIdx = -1;
+  }
+}
+
+// Entry point from the visible buttons
+function pkTap(fieldId) {
+  var el = document.getElementById(fieldId);
+  var isBlank = !el || !el.value;
+
+  // Chains only run when starting from a blank field at the head of a chain
+  if (fieldId === 'form' && isBlank) { openPicker('form', CHAIN_CALL, 0); return; }
+  if (fieldId === 'dfront' && isBlank) { openPicker('dfront', CHAIN_DEF, 0); return; }
+  openPicker(fieldId, null, -1);
+}
+
+// ===== NUMERIC KEYPAD MODAL =====
+var kpField = null;
+var kpValue = '';
+var kpNeg = false;
+var kpAllowNeg = false;
+var kpOnDone = null;
+
+function openKeypad(fieldId, title, allowNeg, onDone) {
+  kpField = fieldId;
+  kpAllowNeg = !!allowNeg;
+  kpOnDone = onDone || null;
+  var cur = document.getElementById(fieldId).value;
+  if (cur === '' || cur === null || cur === undefined) { kpValue = ''; kpNeg = false; }
+  else {
+    var n = String(cur);
+    kpNeg = n.charAt(0) === '-';
+    kpValue = n.replace('-','');
+  }
+  document.getElementById('keypad-title').textContent = title || 'Enter value';
+  document.getElementById('kp-sign').style.visibility = kpAllowNeg ? 'visible' : 'hidden';
+  kpRender();
+  document.getElementById('keypad-modal').classList.add('show');
+}
+
+function kpRender() {
+  var d = kpValue === '' ? '0' : kpValue;
+  document.getElementById('keypad-display').textContent = (kpNeg && kpValue !== '' ? '-' : '') + d;
+}
+
+function kpDigit(n) {
+  if (kpValue.length >= 3) return;
+  kpValue = (kpValue === '' ? '' : kpValue) + n;
+  kpRender();
+}
+
+function kpBack() {
+  kpValue = kpValue.slice(0, -1);
+  if (kpValue === '') kpNeg = false;
+  kpRender();
+}
+
+function kpToggleSign() {
+  if (!kpAllowNeg) return;
+  kpNeg = !kpNeg;
+  kpRender();
+}
+
+function kpEnter() {
+  if (!kpField) { closeKeypad(true); return; }
+  var out = kpValue === '' ? '' : ((kpNeg ? '-' : '') + kpValue);
+  var el = document.getElementById(kpField);
+  el.value = out;
+  if (typeof el.oninput === 'function') el.oninput();
+  var fid = kpField;
+  var done = kpOnDone;
+  closeKeypad(false);
+  kpDisplay(fid);
+  if (typeof done === 'function') done();
+}
+
+function closeKeypad(cancelled) {
+  document.getElementById('keypad-modal').classList.remove('show');
+  kpField = null; kpValue = ''; kpNeg = false; kpOnDone = null;
+}
+
 // ===== PENALTY QUICK-PICK (yards calculator only — nothing is stored beyond yards) =====
 var O_PENALTIES = [
   {n:'False start', y:5},
@@ -640,25 +897,57 @@ function autoHoleType(){
   var holePt=holeOpt.getAttribute('data-type');
   if(holePt){ setPT(holePt); autoComp(); }
 }
+// Values autoComp is allowed to overwrite (i.e. ones it set itself, or blank).
+// Anything else is treated as a deliberate manual choice and left alone.
+var AUTO_RESULTS = ['','Gain','Loss','Completion','1st down','Touchdown','Turnover on downs'];
+
+function setExec(v){
+  var el=document.getElementById('exec');
+  if(!el) return;
+  el.value=v||'';
+  if(typeof pkDisplay==='function') pkDisplay('exec');
+}
+
 function autoComp(){
   var pt=document.getElementById('ptype').value;
   var y=document.getElementById('yds').value;
   var r=document.getElementById('res');
   if(y==='') return;
   var yards=parseInt(y,10);
+  if(isNaN(yards)) return;
   var dist=parseInt(document.getElementById('dst').value,10)||10;
-  var autoResults=['','Gain','Loss','Completion','1st down'];
-  // Only auto-fill if result is blank or was previously auto-filled
-  if(autoResults.indexOf(r.value)<0) return;
-  if(pt==='Run'||pt==='Toss'){
-    if(yards>=dist) r.value='1st down';
-    else if(yards>0) r.value='Gain';
-    else r.value='Loss';
-  } else if(pt==='Pass'){
-    if(yards>=10) r.value='1st down';
-    else if(yards>0) r.value='Completion';
-    else r.value='';
+  var dn=document.getElementById('dn').value;
+  var side=document.getElementById('yside').value;
+  var yl=parseInt(document.getElementById('yline').value,10);
+
+  // --- Execution field: what actually happened on the play ---
+  // Only set it when blank or previously auto-set, so manual picks stick.
+  var execEl=document.getElementById('exec');
+  var execAuto=['','Gain','Loss','Completion','Incomplete'];
+  if(execEl && execAuto.indexOf(execEl.value)>=0){
+    // Pass: any yardage (including 0) is a completion — incompletes are chosen manually
+    if(pt==='Pass'){ setExec('Completion'); }
+    // Run/Toss: negative is a loss, 0 or positive is a gain
+    else if(pt==='Run'||pt==='Toss'){ setExec(yards<0 ? 'Loss' : 'Gain'); }
   }
+
+  // --- Result field: the drive-level outcome ---
+  if(AUTO_RESULTS.indexOf(r.value)<0) return;
+
+  // Touchdown beats everything else if the play reaches the goal line
+  if(!isNaN(yl)){
+    var abs=(side==='ours')?yl:(100-yl);
+    if(abs+yards>=100){ r.value='Touchdown'; if(typeof pkDisplay==='function') pkDisplay('res'); return; }
+  }
+
+  var madeIt = yards>=dist;
+  if(madeIt){ r.value='1st down'; }
+  else if(dn==='4th'){ r.value='Turnover on downs'; }
+  else if(pt==='Run'||pt==='Toss'){ r.value = yards>0 ? 'Gain' : 'Loss'; }
+  else if(pt==='Pass'){ r.value = 'Completion'; }
+  else { r.value=''; }
+
+  if(typeof pkDisplay==='function') pkDisplay('res');
 }
 
 
@@ -899,9 +1188,8 @@ function editPlay(id){
   // Set coverage
   var covSel=document.getElementById('cov');
   for(var ci=0;ci<covSel.options.length;ci++){if(covSel.options[ci].value===p.coverage){covSel.selectedIndex=ci;break;}}
-  // Set notes
-  document.getElementById('notes').value=p.notes||'';
   document.getElementById('blitz').value = p.blitz || '';
+  document.getElementById('exec').value = p.exec || '';
 
   // Set quarter
   var qBtns=document.querySelectorAll('.qt');
@@ -921,6 +1209,7 @@ function editPlay(id){
 
   // Scroll to form
   document.getElementById('log-card').scrollIntoView({behavior:'smooth',block:'start'});
+  refreshAllPickers();
 }
 
 function cancelEdit(){
@@ -928,10 +1217,10 @@ function cancelEdit(){
   document.getElementById('edit-banner').style.display='none';
   document.getElementById('log-play-btn').textContent='+ Log play';
   // Clear fields
-  ['yds','plyr','notes'].forEach(function(id){document.getElementById(id).value='';});
+  ['yds','plyr'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('blitz').selectedIndex=0;
   document.getElementById('qb').value=lastQB||'';
-  ['res','form','hole','mot','play','ptype','dfront','cov'].forEach(function(id){document.getElementById(id).selectedIndex=0;});
+  ['res','exec','form','hole','mot','play','ptype','dfront','cov'].forEach(function(id){document.getElementById(id).selectedIndex=0;});
   lastResultValue = '';
   // Restore the real current-drive state captured before editing began
   if(preEditState){
@@ -946,6 +1235,7 @@ function cancelEdit(){
     setDn('1st'); setDs(10);
     document.getElementById('yline').value='';
   }
+  refreshAllPickers();
 }
 
 
@@ -1000,7 +1290,8 @@ function logPlay(){
     defFront:document.getElementById('dfront').value||'\u2014',
     coverage:document.getElementById('cov').value||'\u2014',
     blitz:document.getElementById('blitz').value||'',
-    notes:document.getElementById('notes').value.trim()||''
+    exec:document.getElementById('exec').value||'',
+    notes:''
   };
   var wasEdit = !!editId;
   if(editId){
@@ -1035,10 +1326,11 @@ function logPlay(){
   } else {
     afterPlay(res,yards,dist,dIdx,side,yl);
   }
-  ['yds','plyr','notes'].forEach(function(i){document.getElementById(i).value='';});
+  ['yds','plyr'].forEach(function(i){document.getElementById(i).value='';});
   document.getElementById('blitz').selectedIndex=0;
-  ['res','form','mot','hole','play','ptype','dfront','cov'].forEach(function(i){document.getElementById(i).selectedIndex=0;});
+  ['res','exec','form','mot','hole','play','ptype','dfront','cov'].forEach(function(i){document.getElementById(i).selectedIndex=0;});
   lastResultValue = '';
+  refreshAllPickers();
 }
 
 function delPlay(id){if(!confirm('Delete this play?'))return;
@@ -1055,12 +1347,11 @@ function renderLog(){
     var yc=p.yards<0?'yn':'';
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
     var tc=TC[p.playtype]||'';var rp=(p.result==='O Penalty')?'py':'';
-    var ni=p.notes?' <span title="'+p.notes.replace(/"/g,'&quot;')+'" style="font-size:10px">&#128221;</span>':'';
     return '<tr class="clickable" onclick="editPlay('+p.id+')">'+
       '<td>'+p.down+' &amp; '+p.dist+'</td>'+
       '<td>'+p.yardline+'</td>'+
       '<td>'+p.hash.replace(' hash','')+'</td>'+
-      '<td>'+p.call+ni+'</td>'+
+      '<td>'+p.call+'</td>'+
       '<td style="width:46px"><span class="pill '+tc+'">'+p.playtype+'</span></td>'+
       '<td>'+p.defFront+(p.blitz==='Y'?'<span class="bz">B</span>':'')+'</td>'+
       '<td>'+p.coverage+'</td>'+
@@ -1160,7 +1451,7 @@ function expGame(id){
   a.click();
 }
 
-load();updateBanner();loadScore();updateStats();renderLog();rebuildDefDropdowns();applyPlaybookRestore();
+load();updateBanner();loadScore();updateStats();renderLog();rebuildDefDropdowns();applyPlaybookRestore();refreshAllPickers();
 document.getElementById('ndate').value=new Date().toISOString().split('T')[0];
 
 // ============================================================
@@ -1209,6 +1500,7 @@ function rebuildSelectFromList(id, items) {
     }
     return '<option>'+v+'</option>';
   }).join('');
+  if (typeof pkDisplay === 'function') pkDisplay(id);
 }
 
 function parseNameTypeLines(raw, validTypes) {
@@ -1376,6 +1668,7 @@ function rebuildDefDropdowns() {
   if (covSel) {
     covSel.innerHTML = '<option value="">\u2014</option>' + COVS.map(function(c){return '<option>'+c+'</option>';}).join('');
   }
+  if (typeof pkDisplay === 'function') { pkDisplay('dfront'); pkDisplay('cov'); }
 }
 
 function gmRenderSetup() {
@@ -1577,7 +1870,6 @@ function bsPlayerName(raw) {
 
 function buildBoxScoreText(g) {
   var plays = g.plays || [];
-  var CATCH = ['Completion','Fumble (after catch)','Touchdown','1st down'];
   var L = [];
 
   var dateStr = g.date ? new Date(g.date+'T00:00:00').toLocaleDateString('en-US') : '';
@@ -1657,12 +1949,15 @@ function buildBoxScoreText(g) {
       if (p.result==='Touchdown') s.rushTDs++;
       if (p.result==='1st down') s.rush1D++;
     }
-    if (p.playtype==='Pass'||p.playtype==='Toss') {
-      if (CATCH.indexOf(p.result)>=0) {
-        s.tgts++; s.rec++; s.recYds+=p.yards;
+    if (p.playtype==='Pass') {
+      // Toss is a lateral — counted as a rush above, not a reception.
+      s.tgts++;
+      var noCatchE = (p.result==='Incomplete'||p.result==='Interception'||p.result==='Sack');
+      if (!noCatchE) {
+        s.rec++; s.recYds+=p.yards;
         if (p.result==='Touchdown') s.recTDs++;
         if (p.result==='1st down') s.rec1D++;
-      } else if (p.result==='Incomplete'||p.result==='Interception') { s.tgts++; }
+      }
     }
   });
 
@@ -1943,12 +2238,18 @@ function aPlayerStats(plays) {
       if (p.result==='Touchdown') pm[plyr].rushTDs++;
       if (p.result==='1st down') pm[plyr].rush1D++;
     }
-    if (p.playtype==='Pass'||p.playtype==='Toss') {
-      if (p.result==='Completion'||p.result==='Fumble (after catch)') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; }
-      else if (p.result==='Incomplete') { pm[plyr].tgts++; }
-      else if (p.result==='Touchdown') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].recTDs++; }
-      else if (p.result==='1st down') { pm[plyr].recYds+=p.yards; pm[plyr].tgts++; pm[plyr].rec++; pm[plyr].rec1D++; }
-      else if (p.result==='Interception') { pm[plyr].tgts++; }
+    if (p.playtype==='Pass') {
+      // Every pass play with a named receiver is a target.
+      // (Toss is a lateral — counted as a rush above, not a reception.)
+      pm[plyr].tgts++;
+      // Results that mean the ball was NOT caught by this receiver.
+      var noCatch = (p.result==='Incomplete'||p.result==='Interception'||p.result==='Sack');
+      if (!noCatch) {
+        pm[plyr].recYds += p.yards;
+        pm[plyr].rec++;
+        if (p.result==='Touchdown') pm[plyr].recTDs++;
+        if (p.result==='1st down') pm[plyr].rec1D++;
+      }
     }
   });
 
