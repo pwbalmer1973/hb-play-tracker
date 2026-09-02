@@ -293,6 +293,7 @@ button{cursor:pointer;font-family:inherit}
           <option value="O Penalty">O Penalty</option>
           <option value="Punt">Punt</option>
           <option value="Sack">Sack</option>
+          <option value="Safety">Safety</option>
           <option value="Touchdown">Touchdown</option>
           <option value="Turnover on downs">Turnover on downs</option>
         </select>
@@ -462,7 +463,7 @@ button{cursor:pointer;font-family:inherit}
 // PTM/FTM removed — play/formation type now comes from Setup-entered data-type on each dropdown option
 var TC={Run:'pr',Pass:'pp',Toss:'pt'};
 var DOWNS=['1st','2nd','3rd','4th'];
-var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs','Punt'];
+var PC=['Touchdown','Fumble','Fumble (after catch)','Interception','Turnover on downs','Punt','Safety'];
 var NA=['Incomplete','D Penalty'];
 var ROSTER=[];
 var QB_ROSTER=[];
@@ -876,6 +877,7 @@ function tdYards(){
   var res=document.getElementById('res').value;
   if(res==='Interception'||res==='Fumble'){
     document.getElementById('yds').value='0';
+    if(typeof kpDisplay==='function') kpDisplay('yds');
     return;
   }
   if(res!=='Touchdown')return;
@@ -883,6 +885,7 @@ function tdYards(){
   var yl=parseInt(document.getElementById('yline').value,10);
   if(!yl||isNaN(yl))return;
   document.getElementById('yds').value=(side==='theirs')?yl:(100-yl);
+  if(typeof kpDisplay==='function') kpDisplay('yds');
 }
 
 // Auto-fill play type from play name
@@ -966,7 +969,18 @@ function autoComp(){
   // Touchdown beats everything else if the play reaches the goal line
   if(!isNaN(yl)){
     var abs=(side==='ours')?yl:(100-yl);
-    if(abs+yards>=100){ r.value='Touchdown'; if(typeof pkDisplay==='function') pkDisplay('res'); return; }
+    if(abs+yards>=100){
+      // You can't gain more than the distance remaining to the goal line.
+      var maxYds = 100 - abs;
+      if(yards > maxYds){
+        document.getElementById('yds').value = maxYds;
+        if(typeof kpDisplay==='function') kpDisplay('yds');
+        toast('Yards capped at ' + maxYds + ' \u2014 goal line');
+      }
+      r.value='Touchdown';
+      if(typeof pkDisplay==='function') pkDisplay('res');
+      return;
+    }
   }
 
   var madeIt = yards>=dist;
@@ -1309,8 +1323,8 @@ function createGameFromModal(){
   save(); setGame(id); closeGameModal();
   toast('Game '+(ha==='away'?'@ ':'vs. ')+opp+' started!');
 }
-// Clear the play form: everything below row 1 is wiped, and row 1 resets to
-// 1st & 10 with the ball spot left exactly where it is.
+// Clear the play form: everything below row 1 is wiped. Row 1 (down, distance,
+// hash, yard line) is left exactly as it is.
 function clearPlayForm(){
   editId=null;
   preEditState=null;
@@ -1323,8 +1337,6 @@ function clearPlayForm(){
   });
   document.getElementById('qb').value=lastQB||'';
   lastResultValue='';
-  // Row 1: reset the down/distance like a change of possession, keep the spot
-  setDn('1st'); setDs(10);
   refreshAllPickers();
   toast('Form cleared');
 }
@@ -1384,6 +1396,7 @@ function logPlay(){
     scoreResult(res);
   }
   if(qbv){lastQB=qbv;document.getElementById('qb').value=qbv;}
+  logSort=null;   // logging a play returns the log to chronological order
   save();updateStats();renderLog();
   if(wasEdit){
     // Restore the real current-drive state instead of auto-advancing from the edited play
@@ -1413,10 +1426,42 @@ function delPlay(id){if(!confirm('Delete this play?'))return;
   save();updateStats();renderLog();
 }
 
+// Play log sorting. null = normal (newest first). Otherwise 'down' | 'hash' | 'call'.
+var logSort = null;
+var DOWN_ORDER = {'1st':1,'2nd':2,'3rd':3,'4th':4};
+
+function sortLog(col){
+  logSort = (logSort === col) ? null : col;
+  renderLog();
+}
+
+function applyLogSort(list){
+  if(!logSort) return [].concat(list).reverse();   // default: newest first
+  var arr = [].concat(list);                        // stable sort keeps chronology within ties
+  if(logSort === 'down'){
+    arr.sort(function(a,b){
+      var d = (DOWN_ORDER[a.down]||9) - (DOWN_ORDER[b.down]||9);
+      if(d !== 0) return d;
+      return (b.dist||0) - (a.dist||0);             // distance: greatest to least
+    });
+  } else if(logSort === 'hash'){
+    arr.sort(function(a,b){ return String(a.hash||'').localeCompare(String(b.hash||'')); });
+  } else if(logSort === 'call'){
+    arr.sort(function(a,b){ return String(a.call||'').localeCompare(String(b.call||'')); });
+  }
+  return arr;
+}
+
+function sortHdr(col,label){
+  var active = (logSort === col);
+  var arrow = active ? ' <span style="font-size:9px">\u25B2</span>' : ' <span style="font-size:9px;opacity:.35">\u25BE</span>';
+  return '<th style="cursor:pointer" onclick="sortLog(\''+col+'\')">'+label+arrow+'</th>';
+}
+
 function renderLog(){
   var el=document.getElementById('logcon'),ps=plays();
   if(!ps.length){el.innerHTML='<div class="es">No plays logged yet.</div>';return;}
-  var rows=[].concat(ps).reverse().map(function(p){
+  var rows=applyLogSort(ps).map(function(p){
     var yc=p.yards<0?'yn':(p.yards>0?'yp':'');
     var ys=p.yards>0?'+'+p.yards:String(p.yards);
     var rc=p.result==='Touchdown'?'rtd':'';
@@ -1435,7 +1480,10 @@ function renderLog(){
       '<td style="width:26px;text-align:right"><button class="bd" onclick="event.stopPropagation();delPlay('+p.id+')">&times;</button></td>'+
       '</tr>';
   }).join('');
-  el.innerHTML='<table class="lt"><thead><tr><th>Down</th><th>Yard</th><th>Hash</th><th>Call</th><th>Type</th><th>Front</th><th>Cov</th><th>Yds</th><th>G/L</th><th>Result</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML='<table class="lt"><thead><tr>'+
+    sortHdr('down','Down')+'<th>Yard</th>'+sortHdr('hash','Hash')+sortHdr('call','Call')+
+    '<th>Type</th><th>Front</th><th>Cov</th><th>Yds</th><th>G/L</th><th>Result</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function newGame(){
