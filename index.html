@@ -166,6 +166,8 @@ button{cursor:pointer;font-family:inherit}
 .kp-key{padding:16px 0;font-size:20px;font-weight:600;background:#f5f5f7;border:1px solid #e5e5ea;border-radius:10px;cursor:pointer;color:#1d1d1f}
 .kp-key:active{background:#dfe7f5}
 .kp-key.wide{grid-column:span 2}
+.kp-sc{font-size:14px!important;padding:13px 0!important}
+.kp-sc-pen{background:#fff9db;color:#9a6e00;border-color:#f0e6a8}
 .kp-disp{font-size:30px;font-weight:700;text-align:center;padding:12px;background:#f5f5f7;border-radius:10px;margin-bottom:12px;min-height:58px;color:#1d1d1f;letter-spacing:.02em}
 
 .gm-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
@@ -216,7 +218,7 @@ button{cursor:pointer;font-family:inherit}
     <button class="edit-banner-cancel" onclick="cancelEdit()">&#10005; Cancel</button>
   </div>
   <div class="card" id="log-card">
-    <div class="ct" id="log-card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Log a play</span><button type="button" onclick="clearPlayForm()" style="font-size:11px;font-weight:600;padding:5px 12px;background:#f5f5f7;color:#c62828;border:1px solid #d2d2d7;border-radius:6px;cursor:pointer;text-transform:none;letter-spacing:0">Clear</button></div>
+    <div class="ct" id="log-card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Log a play</span><div style="display:flex;align-items:center;gap:10px"><label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#6e6e73;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="autolog" onchange="setAutoLog(this.checked)" style="width:15px;height:15px;margin:0;cursor:pointer">Auto-log</label><button type="button" onclick="clearPlayForm()" style="font-size:11px;font-weight:600;padding:5px 12px;background:#f5f5f7;color:#c62828;border:1px solid #d2d2d7;border-radius:6px;cursor:pointer;text-transform:none;letter-spacing:0">Clear</button></div></div>
     <div class="qtabs">
       <button class="qt active" onclick="setQ(1,this)">Q1</button>
       <button class="qt" onclick="setQ(2,this)">Q2</button>
@@ -445,6 +447,15 @@ button{cursor:pointer;font-family:inherit}
       <button class="kp-key wide" style="background:#1a3a8c;color:#fff;border-color:#1a3a8c" onclick="kpEnter()">Enter</button>
       <button class="kp-key" onclick="closeKeypad(true)">Esc</button>
     </div>
+    <div id="kp-shortcuts" style="display:none">
+      <div style="border-top:1px solid #e5e5ea;margin:14px 0 12px"></div>
+      <div class="kp-grid" style="grid-template-columns:repeat(2,1fr)">
+        <button class="kp-key kp-sc kp-sc-pen" onclick="kpShortcutPenalty('O')">O Pen</button>
+        <button class="kp-key kp-sc kp-sc-pen" onclick="kpShortcutPenalty('D')">D Pen</button>
+        <button class="kp-key kp-sc" onclick="kpShortcutResult('Incomplete',true)">Incomplete</button>
+        <button class="kp-key kp-sc" onclick="kpShortcutResult('Sack',false)">Sack</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -642,9 +653,11 @@ function kpDisplay(fieldId) {
 function afterYards() {
   kpDisplay('yds');
   pkDisplay('res');
+  // Results with no ball carrier. On the normal flow Result is still blank here,
+  // so the picker opens; the keypad shortcut buttons handle these cases directly.
   var res = document.getElementById('res').value;
-  var skip = ['Incomplete','Sack','O Penalty','D Penalty'];
-  if (skip.indexOf(res) >= 0) return;
+  var skip = ['Incomplete','Sack','O Penalty','D Penalty','Interception'];
+  if (skip.indexOf(res) >= 0) { tryAutoLog(); return; }
   setTimeout(function(){ openPicker('plyr', null, -1); }, 140);
 }
 
@@ -685,6 +698,7 @@ function closePicker(stopChain) {
 function pickValue(val) {
   var fieldId = pickerField;
   var chain = pickerChain, idx = pickerChainIdx;
+  var wasEditing = !!editId;
   if (!fieldId) { closePicker(true); return; }
 
   var el = document.getElementById(fieldId);
@@ -707,10 +721,21 @@ function pickValue(val) {
     setTimeout(function(){ openPicker(chain[nextIdx], chain, nextIdx); }, 120);
   } else {
     var wasPos = (chain === CHAIN_POS);
+    var wasCall = (chain === CHAIN_CALL);
     pickerChain = null; pickerChainIdx = -1;
     // Field-position chain finishes by opening the yard-line keypad
     if (wasPos && !endEarly) {
       setTimeout(function(){ openKeypad('yline','Yard line',false); }, 140);
+    }
+    // Play-call chain flows straight into yards. A Money formation short-circuits
+    // the rest of the call but still continues to yards.
+    else if (wasCall) {
+      setTimeout(function(){ openKeypad('yds','Yards gained / lost',true,afterYards); }, 140);
+    }
+    // Ball carrier is the last step of a normal play — auto-log if enabled.
+    // Only a real player selection counts; "—" leaves it to the button.
+    else if (fieldId === 'plyr' && val && !wasEditing) {
+      tryAutoLog();
     }
   }
 }
@@ -736,6 +761,14 @@ function pkTap(fieldId) {
   openPicker(fieldId, null, -1);
 }
 
+// Auto-log runs the normal logPlay() path, so all validation still applies.
+// If something is missing the alert fires and the play stays for manual fixing.
+function tryAutoLog(){
+  if(!autoLogOn()) return;
+  if(editId) return;
+  setTimeout(function(){ logPlay(); }, 160);
+}
+
 // ===== NUMERIC KEYPAD MODAL =====
 var kpField = null;
 var kpValue = '';
@@ -756,6 +789,9 @@ function openKeypad(fieldId, title, allowNeg, onDone) {
   }
   document.getElementById('keypad-title').textContent = title || 'Enter value';
   document.getElementById('kp-sign').style.visibility = kpAllowNeg ? 'visible' : 'hidden';
+  // Result shortcuts only make sense on the yards keypad
+  var sc = document.getElementById('kp-shortcuts');
+  if (sc) sc.style.display = (fieldId === 'yds') ? 'block' : 'none';
   kpRender();
   document.getElementById('keypad-modal').classList.add('show');
 }
@@ -794,6 +830,35 @@ function kpEnter() {
   closeKeypad(false);
   kpDisplay(fid);
   if (typeof done === 'function') done();
+}
+
+// Keypad shortcuts: set the Result directly for plays where the normal
+// yards -> ball carrier flow does not apply.
+function kpSetResult(resVal){
+  var r = document.getElementById('res');
+  r.value = resVal;
+  lastResultValue = resVal;
+  if (typeof pkDisplay === 'function') pkDisplay('res');
+}
+
+function kpShortcutResult(resVal, forceZero){
+  if (forceZero) { kpValue = '0'; kpNeg = false; }
+  var out = (kpValue === '') ? '0' : ((kpNeg ? '-' : '') + kpValue);
+  var yEl = document.getElementById('yds');
+  yEl.value = out;
+  closeKeypad(false);
+  kpDisplay('yds');
+  kpSetResult(resVal);
+  // Gain/Loss: an incomplete has none; a sack is a loss.
+  if (resVal === 'Incomplete') setExec('');
+  else if (resVal === 'Sack') setExec(parseInt(out,10) < 0 ? 'Loss' : '');
+  tryAutoLog();
+}
+
+function kpShortcutPenalty(kind){
+  closeKeypad(false);
+  kpSetResult(kind === 'O' ? 'O Penalty' : 'D Penalty');
+  setTimeout(function(){ openPenaltyModal(kind); }, 140);
 }
 
 function closeKeypad(cancelled) {
@@ -861,6 +926,7 @@ function pickPenalty(yards, afd) {
   closePenaltyModal();
   if (typeof kpDisplay === 'function') kpDisplay('yds');
   autoComp();
+  tryAutoLog();
 }
 
 function onResultChange() {
@@ -1342,7 +1408,7 @@ function createGameFromModal(){
   var dt=document.getElementById('modal-date').value;
   if(!opp){ document.getElementById('modal-opp').focus(); return; }
   var id='g'+Date.now();
-  games[id]={id:id,opponent:opp,homeAway:ha,date:dt,plays:[],scoreUs:0,scoreThem:0};
+  games[id]={id:id,opponent:opp,homeAway:ha,date:dt,plays:[],scoreUs:0,scoreThem:0,autoLog:false};
   save(); setGame(id); closeGameModal();
   toast('Game '+(ha==='away'?'@ ':'vs. ')+opp+' started!');
 }
@@ -1515,11 +1581,22 @@ function newGame(){
   var dt=document.getElementById('ndate').value;
   if(!opp){document.getElementById('nopp').focus();return;}
   var id='g'+Date.now();
-  games[id]={id:id,opponent:opp,homeAway:ha,date:dt,plays:[],scoreUs:0,scoreThem:0};
+  games[id]={id:id,opponent:opp,homeAway:ha,date:dt,plays:[],scoreUs:0,scoreThem:0,autoLog:false};
   save();setGame(id);document.getElementById('nopp').value='';showTab('log');
 }
 function setGame(id){
   gid=id;save();updateBanner();loadScore();updateStats();renderLog();lastQB='';document.getElementById('qb').value='';
+  var al=document.getElementById('autolog');
+  if(al) al.checked = !!(games[id] && games[id].autoLog);
+  if(typeof refreshAllPickers==='function') refreshAllPickers();
+}
+
+// Auto-log preference is stored per game, so it never carries over unexpectedly.
+function setAutoLog(on){
+  if(gid && games[gid]){ games[gid].autoLog = !!on; save(); }
+}
+function autoLogOn(){
+  return !!(gid && games[gid] && games[gid].autoLog);
 }
 function delGame(id){
   if(!confirm('Delete this game and all its plays?'))return;
