@@ -168,6 +168,7 @@ button{cursor:pointer;font-family:inherit}
 .kp-key.wide{grid-column:span 2}
 .kp-sc{font-size:14px!important;padding:13px 0!important}
 .kp-sc-pen{background:#fff9db;color:#9a6e00;border-color:#f0e6a8}
+.kp-sc-td{background:#e6f1fb;color:#0c447c;border-color:#b5d4f4}
 .kp-disp{font-size:30px;font-weight:700;text-align:center;padding:12px;background:#f5f5f7;border-radius:10px;margin-bottom:12px;min-height:58px;color:#1d1d1f;letter-spacing:.02em}
 
 .gm-stab{padding:5px 12px;border-radius:8px;border:.5px solid #d2d2d7;font-size:11px;font-weight:500;cursor:pointer;color:#6e6e73;background:#fff}
@@ -454,6 +455,7 @@ button{cursor:pointer;font-family:inherit}
         <button class="kp-key kp-sc kp-sc-pen" onclick="kpShortcutPenalty('D')">D Pen</button>
         <button class="kp-key kp-sc" onclick="kpShortcutResult('Incomplete',true)">Incomplete</button>
         <button class="kp-key kp-sc" onclick="kpShortcutResult('Sack',false)">Sack</button>
+        <button class="kp-key kp-sc kp-sc-td" style="grid-column:span 2" onclick="kpShortcutTouchdown()">Touchdown</button>
       </div>
     </div>
   </div>
@@ -656,7 +658,7 @@ function afterYards() {
   // Results with no ball carrier. On the normal flow Result is still blank here,
   // so the picker opens; the keypad shortcut buttons handle these cases directly.
   var res = document.getElementById('res').value;
-  var skip = ['Incomplete','Sack','O Penalty','D Penalty','Interception'];
+  var skip = ['Sack','O Penalty','D Penalty','Interception'];
   if (skip.indexOf(res) >= 0) { tryAutoLog(); return; }
   setTimeout(function(){ openPicker('plyr', null, -1); }, 140);
 }
@@ -842,6 +844,11 @@ function kpSetResult(resVal){
 }
 
 function kpShortcutResult(resVal, forceZero){
+  // A sack must have real yardage — block until it's entered.
+  if (resVal === 'Sack') {
+    var typed = (kpValue === '') ? 0 : parseInt((kpNeg?'-':'')+kpValue, 10);
+    if (!typed) { alert('Enter the yards lost on the sack.'); return; }
+  }
   if (forceZero) { kpValue = '0'; kpNeg = false; }
   var out = (kpValue === '') ? '0' : ((kpNeg ? '-' : '') + kpValue);
   var yEl = document.getElementById('yds');
@@ -852,7 +859,29 @@ function kpShortcutResult(resVal, forceZero){
   // Gain/Loss: an incomplete has none; a sack is a loss.
   if (resVal === 'Incomplete') setExec('');
   else if (resVal === 'Sack') setExec(parseInt(out,10) < 0 ? 'Loss' : '');
+
+  // An incomplete pass still has an intended receiver, so capture the target.
+  if (resVal === 'Incomplete') {
+    setTimeout(function(){ openPicker('plyr', null, -1); }, 140);
+    return;
+  }
   tryAutoLog();
+}
+
+// Touchdown: the yardage is whatever is left to the goal line, so it never
+// needs typing. Continues to ball carrier so the scorer is credited.
+function kpShortcutTouchdown(){
+  var side = document.getElementById('yside').value;
+  var yl = parseInt(document.getElementById('yline').value, 10);
+  if (isNaN(yl)) { alert('Enter the yard line before logging a touchdown.'); return; }
+  var abs = (side === 'ours') ? yl : (100 - yl);
+  var gained = 100 - abs;
+  document.getElementById('yds').value = gained;
+  closeKeypad(false);
+  kpDisplay('yds');
+  kpSetResult('Touchdown');
+  setExec('Gain');
+  setTimeout(function(){ openPicker('plyr', null, -1); }, 140);
 }
 
 function kpShortcutPenalty(kind){
@@ -1212,8 +1241,17 @@ function advYL(side,yl,yards){
   return abs<=50?{side:'ours',yl:abs}:{side:'theirs',yl:100-abs};
 }
 function afterPlay(res,yards,dist,dIdx,side,yl){
-  // Possession changes: reset to 1st & 10, leave the ball spot alone
-  if(PC.indexOf(res)>=0){setDn('1st');setDs(10);fl('dn');fl('dst');return;}
+  // Possession changes: reset to 1st & 10 and clear the spot, since the new
+  // drive starts somewhere unrelated to where this play ended.
+  if(PC.indexOf(res)>=0){
+    setDn('1st'); setDs(10);
+    document.getElementById('yline').value='';
+    document.getElementById('hsh').selectedIndex=0;
+    fl('dn'); fl('dst'); fl('yline');
+    if(typeof kpDisplay==='function') kpDisplay('yline');
+    if(typeof pkDisplay==='function') pkDisplay('hsh');
+    return;
+  }
 
   // --- Penalties (NFHS): ball moves, and the down is REPLAYED ---
   // D Penalty: ball forward, distance shrinks; reaching the line to gain (or an
